@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Save, BarChart3, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,11 +9,7 @@ const RarityManager = ({ projectId, layers }) => {
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState(null);
 
-  useEffect(() => {
-    fetchRarityData();
-  }, [projectId]);
-
-  const fetchRarityData = async () => {
+  const fetchRarityData = useCallback(async () => {
     try {
       const [rarityRes, statsRes] = await Promise.all([
         axios.get(`/api/rarity/${projectId}`),
@@ -28,7 +24,11 @@ const RarityManager = ({ projectId, layers }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchRarityData();
+  }, [fetchRarityData]);
 
   const handleRarityChange = (layerId, assetId, value) => {
     setRarityData(prev => ({

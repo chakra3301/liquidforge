@@ -1,18 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import axios from 'axios';
-import { GripVertical, Eye, EyeOff, Settings, Move, ChevronUp, ChevronDown, Percent, Trash2 } from 'lucide-react';
+import { GripVertical, Eye, Settings, ChevronUp, ChevronDown, Percent, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
   const [layerAssets, setLayerAssets] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLayerAssets();
-  }, [layers]);
-
-  const fetchLayerAssets = async () => {
+  const fetchLayerAssets = useCallback(async () => {
     try {
       const assetPromises = layers.map(layer =>
         axios.get(`/api/layers/${projectId}/${layer.id}/assets`)
@@ -32,7 +28,11 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [layers, projectId]);
+
+  useEffect(() => {
+    fetchLayerAssets();
+  }, [fetchLayerAssets]);
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Search, Grid, List, Download, X, Plus, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,11 +16,7 @@ const AssetViewer = ({ projectId, layers }) => {
   const [selectedAsset1, setSelectedAsset1] = useState(null);
   const [selectedAsset2, setSelectedAsset2] = useState(null);
 
-  useEffect(() => {
-    fetchLayerAssets();
-  }, [layers]);
-
-  const fetchLayerAssets = async () => {
+  const fetchLayerAssets = useCallback(async () => {
     try {
       const assetPromises = layers.map(layer =>
         axios.get(`/api/layers/${projectId}/${layer.id}/assets`)
@@ -40,7 +36,7 @@ const AssetViewer = ({ projectId, layers }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [layers, projectId]);
 
   const getAllAssets = () => {
     const allAssets = [];
@@ -95,7 +91,7 @@ const AssetViewer = ({ projectId, layers }) => {
     });
   };
 
-  const fetchCompatibilityRules = async () => {
+  const fetchCompatibilityRules = useCallback(async () => {
     try {
       const response = await axios.get(`/api/layers/${projectId}/compatibility`);
       setCompatibilityRules(response.data.compatibility_rules);
@@ -103,7 +99,7 @@ const AssetViewer = ({ projectId, layers }) => {
       toast.error('Failed to load compatibility rules');
       console.error('Error fetching compatibility rules:', error);
     }
-  };
+  }, [projectId]);
 
   const addCompatibilityRule = async () => {
     if (!selectedAsset1 || !selectedAsset2) {
@@ -144,10 +140,14 @@ const AssetViewer = ({ projectId, layers }) => {
   };
 
   useEffect(() => {
+    fetchLayerAssets();
+  }, [fetchLayerAssets]);
+
+  useEffect(() => {
     if (activeTab === 'compatibility') {
       fetchCompatibilityRules();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchCompatibilityRules]);
 
   if (loading) {
     return (

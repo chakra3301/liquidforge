@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Play, Download, BarChart3, AlertCircle, Eye, RefreshCw } from 'lucide-react';
+import { Play, Download, BarChart3, AlertCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const NFTGenerator = ({ projectId, project }) => {
@@ -17,18 +17,18 @@ const NFTGenerator = ({ projectId, project }) => {
   const [generatingPreview, setGeneratingPreview] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  useEffect(() => {
-    fetchGenerationStatus();
-  }, [projectId]);
-
-  const fetchGenerationStatus = async () => {
+  const fetchGenerationStatus = useCallback(async () => {
     try {
       const response = await axios.get(`/api/generate/${projectId}/status`);
       setGenerationStatus(response.data);
     } catch (error) {
       console.error('Error fetching generation status:', error);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchGenerationStatus();
+  }, [fetchGenerationStatus]);
 
   const handleConfigChange = (field, value) => {
     setGenerationConfig(prev => ({

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { Layers, Settings, Download, Play, Eye, Image } from 'lucide-react';
+import { Layers, Download, Play, Eye, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LayerManager from './LayerManager';
 import RarityManager from './RarityManager';
@@ -15,11 +15,7 @@ const ProjectEditor = () => {
   const [layers, setLayers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchProjectData();
-  }, [projectId]);
-
-  const fetchProjectData = async () => {
+  const fetchProjectData = useCallback(async () => {
     try {
       const [projectRes, layersRes] = await Promise.all([
         axios.get(`/api/upload/projects`),
@@ -35,7 +31,11 @@ const ProjectEditor = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchProjectData();
+  }, [fetchProjectData]);
 
   const tabs = [
     { id: 'layers', name: 'Layers', icon: Layers },
@@ -120,18 +120,18 @@ const DownloadManager = ({ projectId, project }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchStats();
-  }, [projectId]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await axios.get(`/api/download/${projectId}/stats`);
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const handleDownload = async (type) => {
     setLoading(true);

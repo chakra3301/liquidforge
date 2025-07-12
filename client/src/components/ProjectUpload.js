@@ -51,7 +51,7 @@ const ProjectUpload = ({ onUploaded, onCancel }) => {
       formData.append('projectName', projectName);
       formData.append('description', description);
 
-      const response = await axios.post('/api/upload', formData, {
+      await axios.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
