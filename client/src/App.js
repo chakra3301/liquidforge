@@ -9,6 +9,15 @@ import ProjectEditor from './components/ProjectEditor';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
 
+// Configure axios base URL for production
+if (process.env.NODE_ENV === 'production') {
+  // In production, use relative URLs since frontend and backend are on same domain
+  window.API_BASE_URL = '';
+} else {
+  // In development, use localhost
+  window.API_BASE_URL = 'http://localhost:5001';
+}
+
 function AppContent() {
   const { user, loading } = useAuth();
 

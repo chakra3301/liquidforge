@@ -1,138 +1,129 @@
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3');
 const path = require('path');
 const fs = require('fs-extra');
 
-let db;
+// Ensure database directory exists
+const dbDir = path.join(__dirname, '..', '..', 'data');
+fs.ensureDirSync(dbDir);
 
-const initDatabase = async () => {
-  const dbPath = path.join(__dirname, '..', '..', 'nft_generator.db');
-  
-  return new Promise((resolve, reject) => {
-    db = new sqlite3.Database(dbPath, (err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      
-      console.log('Connected to SQLite database');
-      
-      // Create tables
-      db.serialize(() => {
-        // Users table
-        db.run(`CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          email TEXT UNIQUE NOT NULL,
-          password TEXT NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
-        
-        // Projects table
-        db.run(`CREATE TABLE IF NOT EXISTS projects (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER,
-          name TEXT NOT NULL,
-          description TEXT,
-          folder_path TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users (id)
-        )`);
-        
-        // Layers table
-        db.run(`CREATE TABLE IF NOT EXISTS layers (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          project_id INTEGER,
-          name TEXT NOT NULL,
-          z_index INTEGER DEFAULT 0,
-          rarity_percentage REAL DEFAULT 100.0,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (project_id) REFERENCES projects (id)
-        )`);
-        
-        // Assets table
-        db.run(`CREATE TABLE IF NOT EXISTS assets (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          layer_id INTEGER,
-          filename TEXT NOT NULL,
-          file_path TEXT NOT NULL,
-          rarity_weight REAL DEFAULT 1.0,
-          position_x REAL DEFAULT 0,
-          position_y REAL DEFAULT 0,
-          scale_x REAL DEFAULT 1.0,
-          scale_y REAL DEFAULT 1.0,
-          rotation REAL DEFAULT 0,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (layer_id) REFERENCES layers (id)
-        )`);
-        
-        // Generated NFTs table
-        db.run(`CREATE TABLE IF NOT EXISTS generated_nfts (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          project_id INTEGER,
-          edition_number INTEGER,
-          image_path TEXT,
-          metadata_path TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (project_id) REFERENCES projects (id)
-        )`);
-        
-        // Project settings table
-        db.run(`CREATE TABLE IF NOT EXISTS project_settings (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          project_id INTEGER UNIQUE,
-          canvas_width INTEGER DEFAULT 1000,
-          canvas_height INTEGER DEFAULT 1000,
-          background_color TEXT DEFAULT '#ffffff',
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (project_id) REFERENCES projects (id)
-        )`);
-        
-        // Asset compatibility table
-        db.run(`CREATE TABLE IF NOT EXISTS asset_compatibility (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          project_id INTEGER,
-          asset_id INTEGER,
-          incompatible_asset_id INTEGER,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (project_id) REFERENCES projects (id),
-          FOREIGN KEY (asset_id) REFERENCES assets (id),
-          FOREIGN KEY (incompatible_asset_id) REFERENCES assets (id),
-          UNIQUE(asset_id, incompatible_asset_id)
-        )`);
-        
-        // Add rarity_percentage column to existing layers table if it doesn't exist
-        db.run(`ALTER TABLE layers ADD COLUMN rarity_percentage REAL DEFAULT 100.0`, (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding rarity_percentage column:', err);
-          }
-        });
-      });
-      
-      resolve();
-    });
-  });
-};
+const dbPath = path.join(dbDir, 'liquid_forge.db');
 
-const getDatabase = () => {
+let db = null;
+
+function getDb() {
   if (!db) {
-    throw new Error('Database not initialized');
+    db = new sqlite3.Database(dbPath);
   }
   return db;
-};
+}
 
-const closeDatabase = () => {
-  if (db) {
-    db.close((err) => {
-      if (err) {
-        console.error('Error closing database:', err);
-      } else {
-        console.log('Database connection closed');
-      }
-    });
+// Promisify database operations
+function promisifyDb(db) {
+  return {
+    get: (sql, params = []) => {
+      return new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        });
+      });
+    },
+    all: (sql, params = []) => {
+      return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        });
+      });
+    },
+    run: (sql, params = []) => {
+      return new Promise((resolve, reject) => {
+        db.run(sql, params, function(err) {
+          if (err) reject(err);
+          else resolve({ lastID: this.lastID, changes: this.changes });
+        });
+      });
+    }
+  };
+}
+
+async function initDatabase() {
+  const database = getDb();
+  const db = promisifyDb(database);
+
+  try {
+    // Create users table
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create projects table
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create layers table
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS layers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        order_index INTEGER NOT NULL,
+        rarity_percentage REAL DEFAULT 100.0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create assets table
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS assets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        layer_id INTEGER NOT NULL,
+        filename TEXT NOT NULL,
+        filepath TEXT NOT NULL,
+        rarity_percentage REAL DEFAULT 100.0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (layer_id) REFERENCES layers (id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create asset_compatibility table for incompatibility rules
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS asset_compatibility (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        asset1_id INTEGER NOT NULL,
+        asset2_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+        FOREIGN KEY (asset1_id) REFERENCES assets (id) ON DELETE CASCADE,
+        FOREIGN KEY (asset2_id) REFERENCES assets (id) ON DELETE CASCADE,
+        UNIQUE(asset1_id, asset2_id)
+      )
+    `);
+
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    throw error;
   }
-};
+}
 
 module.exports = {
-  initDatabase,
-  getDatabase,
-  closeDatabase
+  getDb,
+  promisifyDb,
+  initDatabase
 }; 

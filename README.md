@@ -1,255 +1,226 @@
-# NFT Art Generator
+# Liquid Forge: NFT Generator
 
-A comprehensive web application for generating NFT art collections with layer-based generation, rarity weighting, and metadata management.
+A futuristic cyberpunk-themed NFT generator with layer-based asset management, rarity controls, and compatibility rules.
 
 ## Features
 
-### 🎨 Layer Management
-- Upload ZIP files containing organized layer folders
-- Drag-and-drop layer reordering
-- Visual layer preview with asset counts
-- Layer-specific transformations (position, scale, rotation)
-
-### ⚖️ Rarity System
-- Set custom rarity weights for each asset
-- Real-time rarity percentage calculations
-- Rarity statistics and validation
-- Weighted random selection during generation
-
-### 🖼️ Canvas Editor
-- Customizable canvas dimensions (up to 4000x4000)
-- Background color selection
-- Layer transformation controls
-- Real-time canvas preview
-
-### 🚀 NFT Generation
-- Generate 1-10,000 unique NFTs
-- Automatic duplicate prevention
-- Sharp-based image compositing
-- Custom collection metadata
-
-### 📦 Export & Download
-- Download all generated images as ZIP
-- Export metadata as JSON or CSV
-- Collection statistics and analytics
-- Batch download capabilities
+- 🔐 **User Authentication** - Secure login/register system
+- 🎨 **Layer Management** - Organize assets into layers with drag-and-drop
+- 🎲 **Rarity Controls** - Set rarity percentages for layers and individual assets
+- ⚡ **Compatibility Rules** - Prevent certain assets from being placed together
+- 🖼️ **NFT Generation** - Generate unique NFTs with rarity-based selection
+- 🌌 **Cyberpunk UI** - Dark theme with cyan accents and glowing effects
+- 📱 **Responsive Design** - Works on desktop and mobile devices
 
 ## Tech Stack
 
-### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **SQLite** - Database
-- **Sharp** - Image processing
-- **Multer** - File uploads
-- **JWT** - Authentication
-- **bcryptjs** - Password hashing
+- **Frontend**: React, Tailwind CSS, React Router, Axios
+- **Backend**: Node.js, Express, SQLite3
+- **Authentication**: JWT, bcryptjs
+- **File Processing**: Multer, Sharp
+- **Deployment**: Vercel
 
-### Frontend
-- **React** - UI framework
-- **Tailwind CSS** - Styling
-- **React Router** - Navigation
-- **Axios** - HTTP client
-- **React Beautiful DnD** - Drag and drop
-- **React Dropzone** - File uploads
-- **Lucide React** - Icons
-
-## Installation
+## Local Development
 
 ### Prerequisites
-- Node.js (v16 or higher)
+
+- Node.js 16+ 
 - npm or yarn
 
 ### Setup
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd nft-art-generator
+   git clone https://github.com/chakra3301/liquid-forge.git
+   cd liquid-forge
    ```
 
 2. **Install dependencies**
    ```bash
-   # Install backend dependencies
+   # Install root dependencies
    npm install
    
-   # Install frontend dependencies
+   # Install client dependencies
    cd client
    npm install
-   cd ..
-   ```
-
-3. **Start the development servers**
-   ```bash
-   # Start both backend and frontend
-   npm run dev
    
-   # Or start them separately
-   npm run server  # Backend on port 5000
-   npm run client  # Frontend on port 3000
+   # Install server dependencies
+   cd ../server
+   npm install
    ```
 
-4. **Access the application**
+3. **Environment Setup**
+   Create a `.env` file in the root directory:
+   ```env
+   JWT_SECRET=your-secret-key-here
+   NODE_ENV=development
+   ```
+
+4. **Start the development servers**
+   ```bash
+   # Start backend server (from root directory)
+   npm run dev:server
+   
+   # Start frontend server (from client directory)
+   cd client
+   npm start
+   ```
+
+5. **Access the application**
    - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
+   - Backend API: http://localhost:5001
 
-## Usage
+## Deployment to Vercel
 
-### 1. Create an Account
-- Register with email and password
-- Login to access the dashboard
+### Automatic Deployment
 
-### 2. Upload Project
-- Create a new project
-- Upload a ZIP file with the following structure:
-  ```
-  master.zip
-  ├── background/
-  │   ├── bg1.png
-  │   └── bg2.png
-  ├── character/
-  │   ├── char1.png
-  │   └── char2.png
-  ├── head/
-  │   ├── head1.png
-  │   └── head2.png
-  └── accessories/
-      ├── acc1.png
-      └── acc2.png
-  ```
+1. **Connect to Vercel**
+   - Push your code to GitHub
+   - Connect your repository to Vercel
+   - Vercel will automatically detect the configuration
 
-### 3. Configure Layers
-- Reorder layers using drag-and-drop
-- Set layer visibility and settings
-- Preview layer assets
+2. **Environment Variables**
+   In your Vercel project settings, add these environment variables:
+   ```
+   JWT_SECRET=your-production-secret-key
+   NODE_ENV=production
+   ```
 
-### 4. Set Rarity Weights
-- Assign rarity weights to each asset
-- View rarity percentages and statistics
-- Validate rarity configuration
+3. **Deploy**
+   - Vercel will automatically build and deploy your application
+   - The `vercel.json` configuration handles routing between frontend and backend
 
-### 5. Configure Canvas
-- Set canvas dimensions
-- Choose background color
-- Apply layer transformations
+### Manual Deployment
 
-### 6. Generate NFTs
-- Set generation count (1-10,000)
-- Configure collection metadata
-- Start generation process
-- Monitor generation progress
+1. **Install Vercel CLI**
+   ```bash
+   npm i -g vercel
+   ```
 
-### 7. Download Results
-- Download all images as ZIP
-- Export metadata as JSON or CSV
-- View generation statistics
+2. **Login to Vercel**
+   ```bash
+   vercel login
+   ```
 
-## API Endpoints
+3. **Deploy**
+   ```bash
+   vercel
+   ```
 
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-
-### Projects
-- `GET /api/upload/projects` - Get user projects
-- `POST /api/upload` - Upload project ZIP
-
-### Layers
-- `GET /api/layers/:projectId` - Get project layers
-- `PUT /api/layers/:projectId/order` - Update layer order
-- `GET /api/layers/:projectId/settings` - Get canvas settings
-- `PUT /api/layers/:projectId/settings` - Update canvas settings
-
-### Rarity
-- `GET /api/rarity/:projectId` - Get rarity configuration
-- `PUT /api/rarity/:projectId` - Update rarity weights
-- `GET /api/rarity/:projectId/stats` - Get rarity statistics
-
-### Generation
-- `POST /api/generate/:projectId` - Generate NFTs
-- `GET /api/generate/:projectId/status` - Get generation status
-
-### Download
-- `GET /api/download/:projectId/zip` - Download all as ZIP
-- `GET /api/download/:projectId/metadata` - Download metadata JSON
-- `GET /api/download/:projectId/csv` - Download metadata CSV
+4. **Set Environment Variables**
+   ```bash
+   vercel env add JWT_SECRET
+   vercel env add NODE_ENV
+   ```
 
 ## Project Structure
 
 ```
-nft-art-generator/
-├── server/                 # Backend code
-│   ├── database/          # Database setup
-│   ├── routes/            # API routes
-│   ├── middleware/        # Authentication middleware
-│   └── index.js           # Server entry point
-├── client/                # Frontend code
-│   ├── public/            # Static files
+liquid-forge/
+├── client/                 # React frontend
+│   ├── public/
 │   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── contexts/      # React contexts
-│   │   └── index.js       # App entry point
+│   │   ├── components/     # React components
+│   │   ├── contexts/       # React contexts
+│   │   └── App.js
+│   ├── package.json
+│   └── tailwind.config.js
+├── server/                 # Node.js backend
+│   ├── database/           # Database configuration
+│   ├── middleware/         # Express middleware
+│   ├── routes/             # API routes
+│   ├── index.js
 │   └── package.json
-├── uploads/               # Uploaded ZIP files
-├── extracted/             # Extracted project files
-├── generated/             # Generated NFT images
-├── temp/                  # Temporary files
-└── package.json
+├── data/                   # SQLite database (created on first run)
+├── uploads/                # User uploaded files
+├── generated/              # Generated NFT images
+├── vercel.json            # Vercel configuration
+├── package.json
+└── README.md
 ```
 
-## Configuration
+## API Endpoints
 
-### Environment Variables
-Create a `.env` file in the root directory:
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/verify` - Verify JWT token
 
-```env
-PORT=5000
-JWT_SECRET=your-secret-key-here
-NODE_ENV=development
-```
+### Projects
+- `GET /api/projects` - Get user's projects
+- `POST /api/projects` - Create new project
+- `DELETE /api/projects/:id` - Delete project
 
-### Database
-The application uses SQLite by default. The database file (`nft_generator.db`) will be created automatically on first run.
+### Layers
+- `GET /api/layers/:projectId` - Get project layers
+- `POST /api/layers` - Create new layer
+- `PUT /api/layers/:id` - Update layer
+- `DELETE /api/layers/:id` - Delete layer
 
-## Production Deployment
+### Assets
+- `GET /api/assets/:projectId` - Get project assets
+- `POST /api/upload` - Upload assets
+- `DELETE /api/assets/:id` - Delete asset
 
-### Backend
-1. Set `NODE_ENV=production`
-2. Configure a production database (PostgreSQL recommended)
-3. Set up proper JWT secret
-4. Configure file storage (AWS S3 recommended)
-5. Set up reverse proxy (nginx)
+### Generation
+- `POST /api/generate` - Generate NFTs
+- `GET /api/download/:projectId` - Download generated NFTs
 
-### Frontend
-1. Build the React app: `npm run build`
-2. Serve static files from the `client/build` directory
-3. Configure API proxy in production
+### Compatibility
+- `GET /api/rarity/compatibility/:projectId` - Get compatibility rules
+- `POST /api/rarity/compatibility` - Add compatibility rule
+- `DELETE /api/rarity/compatibility/:id` - Remove compatibility rule
+
+## Database Schema
+
+### Users
+- `id` (PRIMARY KEY)
+- `email` (UNIQUE)
+- `password` (HASHED)
+- `created_at`
+
+### Projects
+- `id` (PRIMARY KEY)
+- `user_id` (FOREIGN KEY)
+- `name`
+- `description`
+- `created_at`
+
+### Layers
+- `id` (PRIMARY KEY)
+- `project_id` (FOREIGN KEY)
+- `name`
+- `order_index`
+- `rarity_percentage`
+- `created_at`
+
+### Assets
+- `id` (PRIMARY KEY)
+- `layer_id` (FOREIGN KEY)
+- `filename`
+- `filepath`
+- `rarity_percentage`
+- `created_at`
+
+### Asset Compatibility
+- `id` (PRIMARY KEY)
+- `project_id` (FOREIGN KEY)
+- `asset1_id` (FOREIGN KEY)
+- `asset2_id` (FOREIGN KEY)
+- `created_at`
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License.
 
 ## Support
 
-For support and questions:
-- Create an issue on GitHub
-- Check the documentation
-- Review the API endpoints
-
-## Roadmap
-
-- [ ] Real-time generation progress
-- [ ] Advanced image filters and effects
-- [ ] Batch project management
-- [ ] Cloud storage integration
-- [ ] Advanced rarity algorithms
-- [ ] Social features and sharing
-- [ ] Mobile app version 
+For support, please open an issue on GitHub or contact the development team. 

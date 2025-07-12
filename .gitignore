@@ -6,7 +6,7 @@ yarn-error.log*
 
 # Production builds
 client/build/
-dist/
+client/dist/
 
 # Environment variables
 .env
@@ -15,10 +15,11 @@ dist/
 .env.test.local
 .env.production.local
 
-# Database
+# Database files
 *.db
 *.sqlite
 *.sqlite3
+data/
 
 # Uploaded files
 uploads/
