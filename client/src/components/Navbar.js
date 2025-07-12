@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
+  const { user } = useAuth();
   return (
     <nav className="w-full bg-cyber-dark p-4 border-b border-cyber-cyan flex items-center justify-between">
       <div className="flex items-center space-x-4">
@@ -23,6 +25,9 @@ const Navbar = () => {
         >
           Upload
         </Link>
+        {user && (
+          <span className="text-sm text-cyber-cyan">{user.email}</span>
+        )}
       </div>
     </nav>
   );
