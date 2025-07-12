@@ -21,40 +21,17 @@ if (process.env.NODE_ENV === 'production') {
 function AppContent() {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-cyber-black">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cyber-cyan cyber-glow"></div>
-      </div>
-    );
-  }
+  console.log('AppContent render:', { user, loading });
 
+  // Simple test render to debug white screen
   return (
-    <Router>
-      <div className="min-h-screen bg-cyber-black text-cyber-cyan font-cyber">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <Routes>
-            <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/project/:projectId" element={user ? <ProjectEditor /> : <Navigate to="/login" />} />
-            <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
-          </Routes>
-        </main>
-        <Toaster 
-          position="top-right" 
-          toastOptions={{
-            style: {
-              background: '#0a0a0a',
-              color: '#00ffff',
-              border: '1px solid #00ffff',
-              boxShadow: '0 0 10px rgba(0, 255, 255, 0.5)',
-            },
-          }}
-        />
-      </div>
-    </Router>
+    <div className="min-h-screen bg-black text-white p-8">
+      <h1 className="text-4xl mb-4">Liquid Forge</h1>
+      <p>Debug Info:</p>
+      <p>Loading: {loading ? 'true' : 'false'}</p>
+      <p>User: {user ? 'logged in' : 'not logged in'}</p>
+      <p>Timestamp: {new Date().toISOString()}</p>
+    </div>
   );
 }
 
