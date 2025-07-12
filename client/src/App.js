@@ -1,6 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
+import Dashboard from './components/Dashboard';
+import ProjectEditor from './components/ProjectEditor';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
 
@@ -22,11 +26,27 @@ function AppContent() {
     <Router>
       <div className="min-h-screen bg-black text-white p-8">
         <Navbar />
-        <h1 className="text-4xl mb-4">Liquid Forge</h1>
-        <p>Debug Info:</p>
-        <p>Loading: {loading ? 'true' : 'false'}</p>
-        <p>User: {user ? 'logged in' : 'not logged in'}</p>
-        <p>Timestamp: {new Date().toISOString()}</p>
+        <main className="container mx-auto px-4 py-8">
+          {loading ? (
+            <div className="text-cyber-cyan">Loading...</div>
+          ) : (
+            <Routes>
+              <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+              <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+              <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+              <Route path="/project/:projectId" element={user ? <ProjectEditor /> : <Navigate to="/login" />} />
+              <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+            </Routes>
+          )}
+        </main>
+        {/* Debug info below main content */}
+        <div className="mt-8">
+          <h1 className="text-4xl mb-4">Liquid Forge</h1>
+          <p>Debug Info:</p>
+          <p>Loading: {loading ? 'true' : 'false'}</p>
+          <p>User: {user ? 'logged in' : 'not logged in'}</p>
+          <p>Timestamp: {new Date().toISOString()}</p>
+        </div>
       </div>
     </Router>
   );
