@@ -31,12 +31,13 @@ export const AuthProvider = ({ children }) => {
       // Set the token in axios headers
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Verify token is still valid
-      axios.get('/api/auth/verify')
+      // Verify token is still valid with timeout
+      axios.get('/api/auth/verify', { timeout: 5000 })
         .then(response => {
           setUser(response.data.user);
         })
-        .catch(() => {
+        .catch((error) => {
+          console.log('Token verification failed:', error.message);
           localStorage.removeItem('token');
           delete axios.defaults.headers.common['Authorization'];
         })
@@ -46,7 +47,17 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
-  }, []);
+
+    // Fallback timeout to ensure app renders
+    const fallbackTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('Auth loading timeout - forcing render');
+        setLoading(false);
+      }
+    }, 10000);
+
+    return () => clearTimeout(fallbackTimeout);
+  }, [loading]);
 
   const login = async (email, password) => {
     try {
