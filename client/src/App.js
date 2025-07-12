@@ -1,4 +1,6 @@
 import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import Navbar from './components/Navbar';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
 
@@ -16,15 +18,17 @@ function AppContent() {
 
   console.log('AppContent render:', { user, loading });
 
-  // Simple test render to debug white screen
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <h1 className="text-4xl mb-4">Liquid Forge</h1>
-      <p>Debug Info:</p>
-      <p>Loading: {loading ? 'true' : 'false'}</p>
-      <p>User: {user ? 'logged in' : 'not logged in'}</p>
-      <p>Timestamp: {new Date().toISOString()}</p>
-    </div>
+    <Router>
+      <div className="min-h-screen bg-black text-white p-8">
+        <Navbar />
+        <h1 className="text-4xl mb-4">Liquid Forge</h1>
+        <p>Debug Info:</p>
+        <p>Loading: {loading ? 'true' : 'false'}</p>
+        <p>User: {user ? 'logged in' : 'not logged in'}</p>
+        <p>Timestamp: {new Date().toISOString()}</p>
+      </div>
+    </Router>
   );
 }
 
