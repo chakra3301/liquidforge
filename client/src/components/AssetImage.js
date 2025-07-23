@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAssetImage } from '../api';
 
 const AssetImage = ({ projectId, assetPath, alt, className, onError, ...props }) => {
   const [imageSrc, setImageSrc] = useState(null);
@@ -17,10 +18,7 @@ const AssetImage = ({ projectId, assetPath, alt, className, onError, ...props })
         setLoading(true);
         setError(false);
         
-        const result = await window.electronAPI.apiAssetImage({
-          projectId,
-          assetPath
-        });
+        const result = await getAssetImage(projectId, assetPath);
         
         setImageSrc(result.data);
       } catch (err) {

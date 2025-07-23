@@ -3,6 +3,7 @@ import { Search, Grid, List, Download, X, Plus, AlertTriangle } from 'lucide-rea
 import toast from 'react-hot-toast';
 import AssetImage from './AssetImage';
 import ImageModal from './ImageModal';
+import { getLayerAssets, getCompatibilityRules, deleteCompatibilityRule } from '../api';
 
 const AssetViewer = ({ projectId, layers }) => {
   const [layerAssets, setLayerAssets] = useState({});
@@ -19,7 +20,7 @@ const AssetViewer = ({ projectId, layers }) => {
   const fetchLayerAssets = useCallback(async () => {
     try {
       const assetPromises = layers.map(layer =>
-        window.electronAPI.apiLayersAssets({ projectId, layerId: layer.id })
+        getLayerAssets(projectId, layer.id)
       );
       
       const responses = await Promise.all(assetPromises);
@@ -93,7 +94,7 @@ const AssetViewer = ({ projectId, layers }) => {
 
   const fetchCompatibilityRules = useCallback(async () => {
     try {
-      const response = await window.electronAPI.apiLayersCompatibility({ projectId });
+      const response = await getCompatibilityRules(projectId);
       setCompatibilityRules(response.compatibility || []);
     } catch (error) {
       toast.error('Failed to load compatibility rules');
@@ -113,13 +114,7 @@ const AssetViewer = ({ projectId, layers }) => {
     }
 
     try {
-      await window.electronAPI.apiLayersCompatibilityAdd({
-        projectId,
-        rule: {
-          asset_id: selectedAsset1.id,
-          incompatible_asset_id: selectedAsset2.id
-        }
-      });
+      await addCompatibilityRule(projectId, selectedAsset1.id, selectedAsset2.id);
       
       toast.success('Compatibility rule added');
       fetchCompatibilityRules();
@@ -131,12 +126,9 @@ const AssetViewer = ({ projectId, layers }) => {
     }
   };
 
-  const deleteCompatibilityRule = async (ruleId) => {
+  const handleDeleteCompatibilityRule = async (ruleId) => {
     try {
-      await window.electronAPI.apiLayersCompatibilityDelete({
-        projectId,
-        ruleId
-      });
+      await deleteCompatibilityRule(projectId, ruleId);
       toast.success('Compatibility rule deleted');
       fetchCompatibilityRules();
     } catch (error) {
@@ -423,7 +415,7 @@ const AssetViewer = ({ projectId, layers }) => {
                       </div>
                     </div>
                     <button
-                      onClick={() => deleteCompatibilityRule(rule.id)}
+                      onClick={() => handleDeleteCompatibilityRule(rule.id)}
                       className="p-2 text-red-400 hover:text-red-300 hover:bg-cyber-gray rounded transition-colors"
                       title="Delete rule"
                     >

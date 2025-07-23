@@ -6,7 +6,7 @@ import LayerManager from './LayerManager';
 import RarityManager from './RarityManager';
 import NFTGenerator from './NFTGenerator';
 import AssetViewer from './AssetViewer';
-import { getProjects, getLayers } from '../api';
+import { getProjects, getLayers, getDownloadStats, downloadGenerated } from '../api';
 
 const ProjectEditor = () => {
   const { projectId } = useParams();
@@ -122,7 +122,7 @@ const DownloadManager = ({ projectId, project }) => {
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await window.electronAPI.apiDownloadStats({ projectId });
+      const response = await getDownloadStats(projectId);
       setStats(response);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -136,10 +136,7 @@ const DownloadManager = ({ projectId, project }) => {
   const handleDownload = async (type) => {
     setLoading(true);
     try {
-      await window.electronAPI.apiDownload({
-        projectId,
-        type
-      });
+      await downloadGenerated(projectId, type);
 
       toast.success(`${type.toUpperCase()} download started`);
     } catch (error) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Save, RotateCcw, Move } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getLayerSettings, updateLayerSettings, getLayers } from '../api';
 
 const CanvasEditor = ({ projectId }) => {
   const [settings, setSettings] = useState({
@@ -15,8 +16,8 @@ const CanvasEditor = ({ projectId }) => {
   const fetchCanvasData = useCallback(async () => {
     try {
       const [settingsRes, layersRes] = await Promise.all([
-        window.electronAPI.apiLayersSettings({ projectId }),
-        window.electronAPI.apiLayers({ projectId })
+        getLayerSettings(projectId),
+        getLayers(projectId)
       ]);
       
       setSettings(settingsRes.settings);
@@ -43,10 +44,7 @@ const CanvasEditor = ({ projectId }) => {
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      await window.electronAPI.apiLayersSettingsUpdate({
-        projectId,
-        settings
-      });
+      await updateLayerSettings(projectId, settings);
       toast.success('Canvas settings saved');
     } catch (error) {
       toast.error('Failed to save canvas settings');

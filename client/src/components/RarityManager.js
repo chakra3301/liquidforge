@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Save, BarChart3, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getRarityData, getRarityStats, updateRarity } from '../api';
 
 const RarityManager = ({ projectId, layers }) => {
   const [rarityData, setRarityData] = useState([]);
@@ -11,8 +12,8 @@ const RarityManager = ({ projectId, layers }) => {
   const fetchRarityData = useCallback(async () => {
     try {
       const [rarityRes, statsRes] = await Promise.all([
-        window.electronAPI.apiRarity({ projectId }),
-        window.electronAPI.apiRarityStats({ projectId })
+        getRarityData(projectId),
+        getRarityStats(projectId)
       ]);
       setRarityData(rarityRes.layers || []);
       setStats(statsRes);
@@ -60,10 +61,7 @@ const RarityManager = ({ projectId, layers }) => {
         });
       });
 
-      await window.electronAPI.apiRarityUpdate({
-        projectId,
-        rarity: { assets: allAssets }
-      });
+      await updateRarity(projectId, { assets: allAssets });
 
       toast.success('Rarity weights saved successfully');
       fetchRarityData(); // Refresh data

@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { GripVertical, Eye, Settings, ChevronUp, ChevronDown, Percent, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AssetImage from './AssetImage';
+import { getLayerAssets, updateLayerOrder, updateLayerRarity, deleteLayer } from '../api';
 
 const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
   const [layerAssets, setLayerAssets] = useState({});
@@ -11,7 +12,7 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
   const fetchLayerAssets = useCallback(async () => {
     try {
       const assetPromises = layers.map(layer =>
-        window.electronAPI.apiLayersAssets({ projectId, layerId: layer.id })
+        getLayerAssets(projectId, layer.id)
       );
       
       const responses = await Promise.all(assetPromises);
@@ -49,10 +50,7 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
 
     try {
       console.log('Updating layer order:', updatedLayers);
-      await window.electronAPI.apiLayersOrder({
-        projectId,
-        layers: updatedLayers
-      });
+      await updateLayerOrder(projectId, updatedLayers);
       
       onLayersUpdate();
       toast.success('Layer order updated successfully');
@@ -80,10 +78,7 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
     }));
 
     try {
-      await window.electronAPI.apiLayersOrder({
-        projectId,
-        layers: updatedLayers
-      });
+      await updateLayerOrder(projectId, updatedLayers);
       
       onLayersUpdate();
       toast.success(`Layer moved ${direction}`);
@@ -93,13 +88,9 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
     }
   };
 
-  const updateLayerRarity = async (layerId, rarityPercentage) => {
+  const handleUpdateLayerRarity = async (layerId, rarityPercentage) => {
     try {
-      await window.electronAPI.apiLayersRarity({
-        projectId,
-        layerId,
-        rarityPercentage
-      });
+      await updateLayerRarity(projectId, layerId, rarityPercentage);
       
       onLayersUpdate();
       toast.success('Layer rarity updated');
@@ -109,16 +100,13 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
     }
   };
 
-  const deleteLayer = async (layerId, layerName) => {
+  const handleDeleteLayer = async (layerId, layerName) => {
     if (!window.confirm(`Are you sure you want to delete the layer "${layerName}"? This will also delete all assets in this layer and cannot be undone.`)) {
       return;
     }
 
     try {
-      await window.electronAPI.apiLayersDelete({
-        projectId,
-        layerId
-      });
+      await deleteLayer(projectId, layerId);
       
       onLayersUpdate();
       toast.success(`Layer "${layerName}" deleted successfully`);
@@ -197,7 +185,7 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
                                   max="100"
                                   step="1"
                                   value={layer.rarity_percentage || 100}
-                                  onChange={(e) => updateLayerRarity(layer.id, parseFloat(e.target.value))}
+                                  onChange={(e) => handleUpdateLayerRarity(layer.id, parseFloat(e.target.value))}
                                   className="flex-1 h-2 bg-cyber-gray rounded-lg appearance-none cursor-pointer slider"
                                 />
                                 <span className={`text-xs font-medium min-w-[3rem] ${
@@ -246,7 +234,7 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
                               <Settings size={16} />
                             </button>
                             <button
-                              onClick={() => deleteLayer(layer.id, layer.name)}
+                              onClick={() => handleDeleteLayer(layer.id, layer.name)}
                               className="p-2 text-red-400 hover:text-red-300 hover:bg-cyber-gray rounded transition-colors"
                               title="Delete layer"
                             >

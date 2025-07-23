@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { getGeneratedImage } from '../api';
 
 const GeneratedNFTImage = React.memo(({ projectId, imageFileName, alt, className, onError, ...props }) => {
   const [imageSrc, setImageSrc] = useState(null);
@@ -32,10 +33,7 @@ const GeneratedNFTImage = React.memo(({ projectId, imageFileName, alt, className
       
       console.log(`Loading image: ${imageFileName} for project: ${projectId}`);
       
-      const result = await window.electronAPI.apiGeneratedImage({
-        projectId,
-        imageFileName
-      });
+      const result = await getGeneratedImage(projectId, imageFileName);
       
       if (mountedRef.current) {
         setImageSrc(result.data);

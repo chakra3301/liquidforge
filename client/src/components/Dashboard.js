@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Folder, Image, Settings, Download, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProjectUpload from './ProjectUpload';
-import { getProjects } from '../api';
+import { getProjects, deleteProject } from '../api';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState([]);
@@ -37,7 +37,7 @@ const Dashboard = () => {
     }
 
     try {
-      await window.electronAPI.apiProjectsDelete({ projectId });
+      await deleteProject(projectId);
       toast.success('Project deleted successfully');
       fetchProjects();
     } catch (error) {

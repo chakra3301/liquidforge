@@ -1,30 +1,23 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { Play, Download, BarChart3, AlertCircle, Eye } from 'lucide-react';
+import { Play, Download, Eye, RotateCcw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GeneratedNFTImage from './GeneratedNFTImage';
+import { getProjects, getGenerationStatus, generatePreview, generateNFTs, downloadGenerated } from '../api';
 
-const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProject }) => {
-  const params = useParams();
-  const routeProjectId = params.projectId;
-  
-  // Use props if provided, otherwise use route params
-  const projectId = propProjectId || routeProjectId;
-  const [project, setProject] = useState(propProject);
-  
+const NFTGenerator = ({ projectId, project: propProject }) => {
   const [generationConfig, setGenerationConfig] = useState({
     count: 100,
-    collectionName: project?.name || 'My NFT Collection',
+    collectionName: 'My NFT Collection',
     description: 'Generated NFT collection',
     baseUrl: window.location.origin
   });
-  const [generating, setGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState(null);
   const [generatedNFTs, setGeneratedNFTs] = useState([]);
   const [previewNFTs, setPreviewNFTs] = useState([]);
-  const [generatingPreview, setGeneratingPreview] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-
+  const [generating, setGenerating] = useState(false);
+  const [generatingPreview, setGeneratingPreview] = useState(false);
+  
   // Refs to prevent multiple simultaneous operations
   const generatingRef = useRef(false);
   const generatingPreviewRef = useRef(false);
@@ -43,10 +36,9 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
       if (!propProject && projectId) {
         try {
           console.log('Fetching project data for ID:', projectId);
-          const response = await window.electronAPI.apiProjects();
+          const response = await getProjects();
           const foundProject = response.projects.find(p => p.id.toString() === projectId.toString());
           if (foundProject && mountedRef.current) {
-            setProject(foundProject);
             setGenerationConfig(prev => ({
               ...prev,
               collectionName: foundProject.name || 'My NFT Collection'
@@ -70,7 +62,7 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
     
     try {
       console.log('Fetching generation status for project:', projectId);
-      const response = await window.electronAPI.apiGenerateStatus({ projectId });
+      const response = await getGenerationStatus(projectId);
       if (mountedRef.current) {
         setGenerationStatus(response);
       }
@@ -103,10 +95,7 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
     
     try {
       console.log('Starting preview generation for project:', projectId);
-      const response = await window.electronAPI.apiGeneratePreview({
-        projectId,
-        count: 5
-      });
+      const response = await generatePreview(projectId, 5);
       
       if (mountedRef.current) {
         setPreviewNFTs(response.nfts || []);
@@ -152,10 +141,7 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
     
     try {
       console.log('Calling apiGenerate...');
-      const response = await window.electronAPI.apiGenerate({
-        projectId,
-        config: generationConfig
-      });
+      const response = await generateNFTs(projectId, generationConfig);
       
       console.log('Generation response:', response);
       
@@ -182,10 +168,7 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
         if (window.confirm('NFTs already exist for this project. Overwrite?')) {
           try {
             console.log('Overwriting existing NFTs...');
-            const response = await window.electronAPI.apiGenerate({
-              projectId,
-              config: { ...generationConfig, overwrite: true }
-            });
+            const response = await generateNFTs(projectId, { ...generationConfig, overwrite: true });
             
             console.log('Overwrite generation response:', response);
             
@@ -231,10 +214,7 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
 
   const handleDownload = useCallback(async (type) => {
     try {
-      await window.electronAPI.apiDownload({
-        projectId,
-        type
-      });
+      await downloadGenerated(projectId, type);
 
       toast.success(`${type.toUpperCase()} download started`);
     } catch (error) {
@@ -328,53 +308,50 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
           {generationStatus ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-cyber-gray border border-cyber-cyan rounded-lg cyber-glow">
-                  <div className="text-2xl font-bold text-cyber-cyan cyber-text">
-                    {generationStatus.total_generated || generatedNFTs.length}
-                  </div>
+                <div className="text-center p-3 bg-cyber-gray border border-cyber-cyan rounded-lg cyber-glow">
+                  <div className="text-2xl font-bold text-cyber-cyan">{generationStatus.total_generated || 0}</div>
                   <div className="text-sm text-cyber-cyan-light">Total Generated</div>
                 </div>
-                <div className="text-center p-4 bg-cyber-gray border border-cyber-cyan rounded-lg cyber-glow">
-                  <div className="text-2xl font-bold text-cyber-cyan cyber-text">
-                    {generationStatus.max_edition || generatedNFTs.length || 0}
-                  </div>
-                  <div className="text-sm text-cyber-cyan-light">Latest Edition</div>
+                <div className="text-center p-3 bg-cyber-gray border border-cyber-cyan rounded-lg cyber-glow">
+                  <div className="text-2xl font-bold text-cyber-cyan">{generationStatus.max_edition || 0}</div>
+                  <div className="text-sm text-cyber-cyan-light">Max Edition</div>
                 </div>
               </div>
-
-              {(generationStatus.total_generated > 0 || generatedNFTs.length > 0) && (
+              
+              {generationStatus.total_generated > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-medium text-cyber-cyan cyber-text">Download Options</h4>
-                  
-                  <button
-                    onClick={() => handleDownload('zip')}
-                    className="w-full cyber-button flex items-center justify-center space-x-2 px-4 py-2 rounded-lg"
-                  >
-                    <Download size={16} />
-                    <span>Download All (ZIP)</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => handleDownload('metadata')}
-                    className="w-full cyber-button flex items-center justify-center space-x-2 px-4 py-2 rounded-lg"
-                  >
-                    <Download size={16} />
-                    <span>Download Metadata (JSON)</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => handleDownload('csv')}
-                    className="w-full cyber-button flex items-center justify-center space-x-2 px-4 py-2 rounded-lg"
-                  >
-                    <Download size={16} />
-                    <span>Download Metadata (CSV)</span>
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-cyber-cyan">Download Generated NFTs</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleDownload('images')}
+                        className="cyber-button-small flex items-center space-x-1 px-3 py-1 rounded text-xs"
+                      >
+                        <Download size={12} />
+                        <span>Images</span>
+                      </button>
+                      <button
+                        onClick={() => handleDownload('metadata')}
+                        className="cyber-button-small flex items-center space-x-1 px-3 py-1 rounded text-xs"
+                      >
+                        <Download size={12} />
+                        <span>Metadata</span>
+                      </button>
+                      <button
+                        onClick={() => handleDownload('all')}
+                        className="cyber-button-small flex items-center space-x-1 px-3 py-1 rounded text-xs"
+                      >
+                        <Download size={12} />
+                        <span>All</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-center py-8 text-cyber-cyan-light">
-              <BarChart3 className="mx-auto h-12 w-12 mb-4 cyber-glow" />
+            <div className="text-center py-8">
+              <RotateCcw className="h-8 w-8 text-cyber-cyan-light mx-auto mb-2" />
               <p>No NFTs generated yet</p>
             </div>
           )}
@@ -472,6 +449,6 @@ const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProjec
       )}
     </div>
   );
-});
+};
 
 export default NFTGenerator; 
