@@ -313,7 +313,20 @@ export async function generateNFTs(projectId, config) {
   if (!res.ok) {
     const errorText = await res.text();
     console.error('generateNFTs - Error response:', errorText);
-    throw new Error('Failed to generate NFTs');
+    
+    // Try to parse the error response as JSON
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch (e) {
+      errorData = { error: errorText };
+    }
+    
+    // Create a custom error with the server's error message
+    const error = new Error(errorData.error || 'Failed to generate NFTs');
+    error.status = res.status;
+    error.data = errorData;
+    throw error;
   }
   return res.json();
 }
