@@ -60,7 +60,7 @@ export async function getLayers(projectId) {
 }
 
 export async function getLayerAssets(projectId, layerId) {
-  const res = await fetch(`${API_BASE}/api/layers/${projectId}/assets/${layerId}`, {
+  const res = await fetch(`${API_BASE}/api/layers/${projectId}/${layerId}/assets`, {
     headers: {
       'Authorization': `Bearer ${getToken()}`
     }
@@ -83,20 +83,20 @@ export async function updateLayerOrder(projectId, layers) {
 }
 
 export async function updateLayerRarity(projectId, layerId, rarityPercentage) {
-  const res = await fetch(`${API_BASE}/api/layers/${projectId}/rarity/${layerId}`, {
+  const res = await fetch(`${API_BASE}/api/layers/${projectId}/layers/${layerId}/rarity`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${getToken()}`
     },
-    body: JSON.stringify({ rarityPercentage })
+    body: JSON.stringify({ rarity_percentage: rarityPercentage })
   });
   if (!res.ok) throw new Error('Failed to update layer rarity');
   return res.json();
 }
 
 export async function deleteLayer(projectId, layerId) {
-  const res = await fetch(`${API_BASE}/api/layers/${projectId}/${layerId}`, {
+  const res = await fetch(`${API_BASE}/api/layers/${projectId}/layers/${layerId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${getToken()}`
