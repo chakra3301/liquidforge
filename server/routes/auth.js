@@ -68,11 +68,13 @@ router.post('/login', async (req, res) => {
     }
 
     // Create JWT token
+    console.log('Login - JWT_SECRET:', JWT_SECRET ? 'Present' : 'Missing');
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
+    console.log('Login - Token generated:', token ? 'Yes' : 'No');
 
     res.json({
       message: 'Login successful',
