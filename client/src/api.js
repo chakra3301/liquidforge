@@ -363,18 +363,27 @@ export async function getAssetImage(projectId, assetPath) {
 }
 
 export async function getGeneratedImage(projectId, imageFileName) {
-  // Extract just the filename from the full path
-  const filename = imageFileName.split('/').pop();
-  console.log('getGeneratedImage - Original path:', imageFileName);
-  console.log('getGeneratedImage - Extracted filename:', filename);
+  // For preview images, we need to preserve the subdirectory structure
+  // For final images, we just need the filename
+  let pathToUse;
+  if (imageFileName.includes('/preview-')) {
+    // This is a preview image, keep the full path after /generated/
+    pathToUse = imageFileName.replace('/generated/', '');
+  } else {
+    // This is a final image, just use the filename
+    pathToUse = imageFileName.split('/').pop();
+  }
   
-  const res = await fetch(`${API_BASE}/api/generated/${projectId}/${encodeURIComponent(filename)}`, {
+  console.log('getGeneratedImage - Original path:', imageFileName);
+  console.log('getGeneratedImage - Path to use:', pathToUse);
+  
+  const res = await fetch(`${API_BASE}/api/generated/${projectId}/${encodeURIComponent(pathToUse)}`, {
     headers: {
       'Authorization': `Bearer ${getToken()}`
     }
   });
   
-  console.log('getGeneratedImage - URL:', `${API_BASE}/api/generated/${projectId}/${encodeURIComponent(filename)}`);
+  console.log('getGeneratedImage - URL:', `${API_BASE}/api/generated/${projectId}/${encodeURIComponent(pathToUse)}`);
   console.log('getGeneratedImage - Response status:', res.status);
   
   if (!res.ok) {
