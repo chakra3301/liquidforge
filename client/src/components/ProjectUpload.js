@@ -64,20 +64,20 @@ const ProjectUpload = ({ onUploaded, onCancel }) => {
   };
 
   return (
-    <div className="modern-card p-6">
+    <div className="cyber-card p-6 rounded-lg">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="modern-heading-sm">Upload New Project</h2>
+        <h2 className="text-xl font-semibold text-cyber-cyan cyber-text">Upload New Project</h2>
         <button
           onClick={onCancel}
-          className="text-text-muted hover:text-white transition-colors"
+          className="text-cyber-cyan hover:text-cyber-cyan-light transition-colors"
         >
           <X size={24} />
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="modern-space-y">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="projectName" className="block modern-text-sm mb-2">
+          <label htmlFor="projectName" className="block text-sm font-medium text-cyber-cyan mb-2">
             Project Name
           </label>
           <input
@@ -85,94 +85,108 @@ const ProjectUpload = ({ onUploaded, onCancel }) => {
             type="text"
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
-            className="modern-input"
+            className="cyber-input w-full px-3 py-2 rounded-md"
             placeholder="Enter project name"
             required
           />
         </div>
 
         <div>
-          <label htmlFor="description" className="block modern-text-sm mb-2">
+          <label htmlFor="description" className="block text-sm font-medium text-cyber-cyan mb-2">
             Description (Optional)
           </label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="modern-textarea"
-            placeholder="Enter project description"
+            className="cyber-input w-full px-3 py-2 rounded-md"
             rows={3}
+            placeholder="Enter project description"
           />
         </div>
 
         <div>
-          <label className="block modern-text-sm mb-2">Project ZIP File</label>
+          <label className="block text-sm font-medium text-cyber-cyan mb-2">Upload ZIP File</label>
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors cyber-glow ${
               isDragActive
-                ? 'border-accent bg-accent/5'
-                : 'border-border hover:border-border-light'
+                ? 'border-cyber-cyan bg-cyber-gray'
+                : 'border-cyber-cyan hover:border-cyber-cyan-light'
             }`}
           >
             <input {...getInputProps()} />
-            {selectedFile ? (
-              <div className="space-y-2">
-                <File className="mx-auto h-8 w-8 text-accent" />
-                <p className="modern-text-sm">{selectedFile.name}</p>
-                <p className="modern-text-xs text-text-muted">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-                <button
-                  type="button"
-                  onClick={removeFile}
-                  className="modern-button-secondary text-xs"
-                >
-                  Remove file
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload className="mx-auto h-8 w-8 text-text-muted" />
-                <p className="modern-text-sm">
-                  {isDragActive ? 'Drop the ZIP file here' : 'Drag & drop a ZIP file here'}
-                </p>
-                <p className="modern-text-xs text-text-muted">
-                  or click to select a file
-                </p>
-              </div>
-            )}
+            <Upload className="mx-auto h-12 w-12 text-cyber-cyan" />
+            <p className="mt-2 text-sm text-cyber-cyan-light">
+              {isDragActive
+                ? 'Drop the ZIP file here...'
+                : 'Drag and drop a ZIP file here, or click to select'}
+            </p>
+            <p className="text-xs text-cyber-cyan-light mt-1">
+              The ZIP file should contain folders, each representing a layer
+            </p>
           </div>
         </div>
 
-        <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5" />
-            <div>
-              <h4 className="modern-text-sm font-medium text-blue-400">Project Structure</h4>
-              <p className="modern-text-xs text-text-secondary mt-1">
-                Your ZIP file should contain folders, where each folder represents a layer. 
-                Each layer folder should contain image files (PNG, JPG, etc.) that will be 
-                used to generate the NFTs.
-              </p>
+        {selectedFile && (
+          <div className="flex items-center justify-between p-3 bg-cyber-gray border border-cyber-cyan rounded-lg cyber-glow">
+            <div className="flex items-center space-x-3">
+              <File className="h-5 w-5 text-cyber-cyan" />
+              <div>
+                <p className="text-sm font-medium text-cyber-cyan">{selectedFile.name}</p>
+                <p className="text-xs text-cyber-cyan-light">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={removeFile}
+              className="text-cyber-cyan hover:text-cyber-cyan-light"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        <div className="bg-cyber-gray border border-cyber-cyan rounded-lg p-4 cyber-glow">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-cyber-cyan mt-0.5 cyber-glow" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-cyber-cyan cyber-text">ZIP File Structure</h3>
+              <div className="mt-2 text-sm text-cyber-cyan-light">
+                <p><strong>Important:</strong> Layer folders must be at the root level of the ZIP file.</p>
+                <p className="mt-1">Your ZIP file should contain folders, each representing a layer:</p>
+                <ul className="mt-1 list-disc list-inside space-y-1">
+                  <li>background/ - Background images</li>
+                  <li>character/ - Character body images</li>
+                  <li>head/ - Head/face images</li>
+                  <li>accessories/ - Accessory images</li>
+                </ul>
+                <p className="mt-2">Each folder should contain PNG, JPG, or WebP images.</p>
+                <p className="mt-2 text-xs text-cyber-cyan">
+                  ❌ Don't put folders inside another folder (e.g., my-project/background/)
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex space-x-3 pt-4">
-          <button
-            type="submit"
-            disabled={uploading || !selectedFile}
-            className="modern-button-primary flex-1"
-          >
-            {uploading ? 'Uploading...' : 'Upload Project'}
-          </button>
+        <div className="flex justify-end space-x-3">
           <button
             type="button"
             onClick={onCancel}
-            className="modern-button-secondary"
+            className="cyber-button px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={uploading}
           >
             Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={uploading || !selectedFile || !projectName.trim()}
+            className="cyber-button px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {uploading ? 'Uploading...' : 'Upload Project'}
           </button>
         </div>
       </form>

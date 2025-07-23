@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { login } from '../../api';
 
 export default function Login() {
@@ -24,67 +24,106 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-lg">NFT</span>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      backgroundColor: '#1f2937',
+      color: 'white'
+    }}>
+      <form onSubmit={handleSubmit} style={{
+        backgroundColor: '#374151',
+        padding: '2rem',
+        borderRadius: '0.5rem',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        width: '100%',
+        maxWidth: '400px'
+      }}>
+        <h2 style={{
+          fontSize: '1.5rem',
+          fontWeight: 'bold',
+          marginBottom: '1.5rem',
+          color: '#06b6d4',
+          textAlign: 'center'
+        }}>Login</h2>
+        
+        {error && (
+          <div style={{
+            color: '#ef4444',
+            marginBottom: '1rem',
+            padding: '0.5rem',
+            backgroundColor: '#991b1b',
+            borderRadius: '0.25rem'
+          }}>
+            {error}
           </div>
-          <h1 className="modern-heading-lg">Welcome back</h1>
-          <p className="modern-text-secondary">Sign in to your account</p>
+        )}
+        
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '0.5rem 0.75rem',
+            marginBottom: '1rem',
+            backgroundColor: '#1f2937',
+            border: '1px solid #06b6d4',
+            color: '#a5f3fc',
+            borderRadius: '0.375rem',
+            outline: 'none'
+          }}
+          required
+        />
+        
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '0.5rem 0.75rem',
+            marginBottom: '1.5rem',
+            backgroundColor: '#1f2937',
+            border: '1px solid #06b6d4',
+            color: '#a5f3fc',
+            borderRadius: '0.375rem',
+            outline: 'none'
+          }}
+          required
+        />
+        
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            backgroundColor: '#0891b2',
+            color: 'white',
+            fontWeight: '500',
+            padding: '0.5rem 1rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.5 : 1
+          }}
+        >
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
+        
+        <div style={{
+          marginTop: '1rem',
+          textAlign: 'center',
+          color: '#67e8f9',
+          fontSize: '0.875rem'
+        }}>
+          Don't have an account? <a href="/register" style={{ color: '#06b6d4', textDecoration: 'underline' }}>Register</a>
         </div>
-
-        <div className="modern-card p-8">
-          <form onSubmit={handleSubmit} className="modern-space-y">
-            {error && (
-              <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-            
-            <div>
-              <label className="block modern-text-sm mb-2">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="modern-input"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block modern-text-sm mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="modern-input"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className="modern-button-primary w-full"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </form>
-          
-          <div className="mt-6 text-center">
-            <p className="modern-text-sm">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-accent hover:text-accent-hover transition-colors">
-                Create one
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
   );
 } 
