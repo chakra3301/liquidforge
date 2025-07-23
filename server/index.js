@@ -11,9 +11,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the React app build directory
-app.use(express.static(path.join(__dirname, '../client/build')));
-
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/upload', require('./routes/upload'));
@@ -28,11 +25,6 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Serve generated images
 app.use('/generated', express.static(path.join(__dirname, '../generated')));
-
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-});
 
 const PORT = process.env.PORT || 5001;
 
