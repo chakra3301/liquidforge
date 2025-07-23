@@ -2,6 +2,11 @@ const API_BASE = process.env.REACT_APP_API_URL.replace(/\/$/, '');
 
 function getToken() {
   const token = localStorage.getItem('token');
+  console.log('getToken - Token from localStorage:', token ? 'Present' : 'Missing');
+  if (token) {
+    console.log('getToken - Token length:', token.length);
+    console.log('getToken - Token starts with:', token.substring(0, 20) + '...');
+  }
   if (!token) {
     console.warn('No authentication token found');
   }
@@ -16,7 +21,13 @@ export async function login(email, password) {
   });
   if (!res.ok) throw new Error('Login failed');
   const data = await res.json();
+  console.log('Login - Received token:', data.token ? 'Present' : 'Missing');
+  if (data.token) {
+    console.log('Login - Token length:', data.token.length);
+    console.log('Login - Token starts with:', data.token.substring(0, 20) + '...');
+  }
   localStorage.setItem('token', data.token);
+  console.log('Login - Token stored in localStorage');
   return data;
 }
 
