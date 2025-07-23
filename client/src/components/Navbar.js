@@ -1,9 +1,14 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   return (
     <nav className="w-full bg-cyber-dark p-4 border-b border-cyber-cyan flex items-center justify-between">
       <div className="flex items-center space-x-4">
@@ -26,7 +31,10 @@ const Navbar = () => {
           Upload
         </Link>
         {user && (
-          <span className="text-sm text-cyber-cyan">{user.email}</span>
+          <>
+            <span className="text-sm text-cyber-cyan">{user.email || 'User'}</span>
+            <button onClick={handleLogout} className="ml-4 cyber-button px-3 py-1 rounded">Logout</button>
+          </>
         )}
       </div>
     </nav>

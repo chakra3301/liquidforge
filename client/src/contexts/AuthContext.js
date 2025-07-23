@@ -1,19 +1,33 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  // Automatically log in as demo user
-  const [user] = useState({ email: 'demo@user.com', userId: 1 });
-  const [loading] = useState(false);
-  const [authToken] = useState('demo-token');
+  const [user, setUser] = useState(null);
 
-  // No-op login/logout
-  const login = async () => {};
-  const logout = () => {};
+  useEffect(() => {
+    // Check for token in localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Optionally, decode token for user info
+      setUser({ token });
+    } else {
+      setUser(null);
+    }
+  }, []);
+
+  const login = (token) => {
+    localStorage.setItem('token', token);
+    setUser({ token });
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, token: authToken, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
