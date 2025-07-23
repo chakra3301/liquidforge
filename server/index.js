@@ -6,8 +6,20 @@ const { initDatabase } = require('./database/database');
 
 const app = express();
 
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'https://liquidforge.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
