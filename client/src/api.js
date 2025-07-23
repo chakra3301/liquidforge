@@ -98,26 +98,47 @@ export async function updateLayerOrder(projectId, layers) {
 }
 
 export async function updateLayerRarity(projectId, layerId, rarityPercentage) {
+  const token = getToken();
+  console.log('updateLayerRarity - Token:', token ? 'Present' : 'Missing');
+  console.log('updateLayerRarity - URL:', `${API_BASE}/api/layers/${projectId}/layers/${layerId}/rarity`);
+  console.log('updateLayerRarity - Data:', { rarity_percentage: rarityPercentage });
+  
   const res = await fetch(`${API_BASE}/api/layers/${projectId}/layers/${layerId}/rarity`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({ rarity_percentage: rarityPercentage })
   });
-  if (!res.ok) throw new Error('Failed to update layer rarity');
+  
+  console.log('updateLayerRarity - Response status:', res.status);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('updateLayerRarity - Error response:', errorText);
+    throw new Error('Failed to update layer rarity');
+  }
   return res.json();
 }
 
 export async function deleteLayer(projectId, layerId) {
+  const token = getToken();
+  console.log('deleteLayer - Token:', token ? 'Present' : 'Missing');
+  console.log('deleteLayer - URL:', `${API_BASE}/api/layers/${projectId}/layers/${layerId}`);
+  
   const res = await fetch(`${API_BASE}/api/layers/${projectId}/layers/${layerId}`, {
     method: 'DELETE',
     headers: {
-      'Authorization': `Bearer ${getToken()}`
+      'Authorization': `Bearer ${token}`
     }
   });
-  if (!res.ok) throw new Error('Failed to delete layer');
+  
+  console.log('deleteLayer - Response status:', res.status);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('deleteLayer - Error response:', errorText);
+    throw new Error('Failed to delete layer');
+  }
   return res.json();
 }
 
