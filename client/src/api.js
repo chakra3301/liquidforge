@@ -48,6 +48,25 @@ export function logout() {
   console.log('Token cleared from localStorage');
 }
 
+// Debug function to clear token and reload
+export function debugClearToken() {
+  localStorage.removeItem('token');
+  console.log('Token cleared from localStorage');
+  console.log('Please refresh the page and log in again');
+  window.location.reload();
+}
+
+// Debug function to show current token info
+export function debugTokenInfo() {
+  const token = localStorage.getItem('token');
+  console.log('Current token:', token ? 'Present' : 'Missing');
+  if (token) {
+    console.log('Token length:', token.length);
+    console.log('Token starts with:', token.substring(0, 20) + '...');
+    console.log('Token ends with:', '...' + token.substring(token.length - 20));
+  }
+}
+
 export async function getProjects() {
   const res = await fetch(`${API_BASE}/api/upload/projects`, {
     headers: {
