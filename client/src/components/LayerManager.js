@@ -180,21 +180,31 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
                                 <Percent size={12} className="text-cyber-cyan" />
                                 <span className="text-xs text-cyber-cyan-light">Rarity:</span>
                                 <input
-                                  type="range"
+                                  type="number"
                                   min="0"
                                   max="100"
                                   step="1"
                                   value={layer.rarity_percentage || 100}
-                                  onChange={(e) => handleUpdateLayerRarity(layer.id, parseFloat(e.target.value))}
-                                  className="flex-1 h-2 bg-cyber-gray rounded-lg appearance-none cursor-pointer slider"
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value);
+                                    if (!isNaN(value) && value >= 0 && value <= 100) {
+                                      handleUpdateLayerRarity(layer.id, value);
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    const value = parseFloat(e.target.value);
+                                    if (isNaN(value) || value < 0) {
+                                      e.target.value = 0;
+                                      handleUpdateLayerRarity(layer.id, 0);
+                                    } else if (value > 100) {
+                                      e.target.value = 100;
+                                      handleUpdateLayerRarity(layer.id, 100);
+                                    }
+                                  }}
+                                  className="w-16 h-6 bg-cyber-gray border border-cyber-cyan text-cyber-cyan text-xs px-2 py-1 rounded cyber-input focus:cyber-glow-strong"
+                                  style={{ textAlign: 'center' }}
                                 />
-                                <span className={`text-xs font-medium min-w-[3rem] ${
-                                  (layer.rarity_percentage || 100) < 100 
-                                    ? 'text-cyber-cyan' 
-                                    : 'text-cyber-cyan-light'
-                                }`}>
-                                  {layer.rarity_percentage || 100}%
-                                </span>
+                                <span className="text-xs text-cyber-cyan-light">%</span>
                               </div>
                             </div>
                           </div>
