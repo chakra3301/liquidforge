@@ -2,16 +2,16 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const archiver = require('archiver');
-const { getDatabase } = require('../database/database');
+const { getDb } = require('../database/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Download all generated NFTs as ZIP
-router.get('/:projectId/zip', authenticateToken, (req, res) => {
+router.get('/:projectId/zip', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
   const userId = req.user.userId;
-  const db = getDatabase();
+  const db = await getDb();
   
   // Verify user owns this project
   db.get('SELECT * FROM projects WHERE id = ? AND user_id = ?', [projectId, userId], (err, project) => {
@@ -87,10 +87,10 @@ router.get('/:projectId/zip', authenticateToken, (req, res) => {
 });
 
 // Download metadata as single JSON file
-router.get('/:projectId/metadata', authenticateToken, (req, res) => {
+router.get('/:projectId/metadata', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
   const userId = req.user.userId;
-  const db = getDatabase();
+  const db = await getDb();
   
   // Verify user owns this project
   db.get('SELECT * FROM projects WHERE id = ? AND user_id = ?', [projectId, userId], (err, project) => {
@@ -147,10 +147,10 @@ router.get('/:projectId/metadata', authenticateToken, (req, res) => {
 });
 
 // Download metadata as CSV
-router.get('/:projectId/csv', authenticateToken, (req, res) => {
+router.get('/:projectId/csv', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
   const userId = req.user.userId;
-  const db = getDatabase();
+  const db = await getDb();
   
   // Verify user owns this project
   db.get('SELECT * FROM projects WHERE id = ? AND user_id = ?', [projectId, userId], (err, project) => {
@@ -227,10 +227,10 @@ router.get('/:projectId/csv', authenticateToken, (req, res) => {
 });
 
 // Get download statistics
-router.get('/:projectId/stats', authenticateToken, (req, res) => {
+router.get('/:projectId/stats', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
   const userId = req.user.userId;
-  const db = getDatabase();
+  const db = await getDb();
   
   // Verify user owns this project
   db.get('SELECT id FROM projects WHERE id = ? AND user_id = ?', [projectId, userId], (err, project) => {

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Save, RotateCcw, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Save, RotateCcw, Move } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CanvasEditor = ({ projectId }) => {
@@ -10,30 +9,29 @@ const CanvasEditor = ({ projectId }) => {
     background_color: '#ffffff'
   });
   const [layers, setLayers] = useState([]);
-  const [selectedLayer, setSelectedLayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchCanvasData();
-  }, [projectId]);
-
-  const fetchCanvasData = async () => {
+  const fetchCanvasData = useCallback(async () => {
     try {
       const [settingsRes, layersRes] = await Promise.all([
-        axios.get(`/api/layers/${projectId}/settings`),
-        axios.get(`/api/layers/${projectId}`)
+        window.electronAPI.apiLayersSettings({ projectId }),
+        window.electronAPI.apiLayers({ projectId })
       ]);
       
-      setSettings(settingsRes.data);
-      setLayers(layersRes.data.layers);
+      setSettings(settingsRes.settings);
+      setLayers(layersRes.layers);
     } catch (error) {
       toast.error('Failed to load canvas data');
       console.error('Error fetching canvas data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchCanvasData();
+  }, [fetchCanvasData]);
 
   const handleSettingsChange = (field, value) => {
     setSettings(prev => ({
@@ -45,7 +43,10 @@ const CanvasEditor = ({ projectId }) => {
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      await axios.put(`/api/layers/${projectId}/settings`, settings);
+      await window.electronAPI.apiLayersSettingsUpdate({
+        projectId,
+        settings
+      });
       toast.success('Canvas settings saved');
     } catch (error) {
       toast.error('Failed to save canvas settings');
@@ -55,15 +56,7 @@ const CanvasEditor = ({ projectId }) => {
     }
   };
 
-  const handleAssetTransform = async (assetId, transform) => {
-    try {
-      await axios.put(`/api/layers/${projectId}/assets/${assetId}`, transform);
-      toast.success('Asset transformation saved');
-    } catch (error) {
-      toast.error('Failed to save transformation');
-      console.error('Error saving transformation:', error);
-    }
-  };
+
 
   if (loading) {
     return (

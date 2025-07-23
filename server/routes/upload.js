@@ -3,8 +3,12 @@ const multer = require('multer');
 const unzipper = require('unzipper');
 const path = require('path');
 const fs = require('fs-extra');
+
+// Ensure uploads directory exists
+fs.ensureDirSync(path.join(__dirname, '..', '..', 'uploads'));
+
 const { v4: uuidv4 } = require('uuid');
-const { getDatabase } = require('../database/database');
+const { getDb, promisifyDb } = require('../database/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -23,7 +27,10 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed') {
+    console.log('File filter check:', file.originalname, file.mimetype);
+    if (file.mimetype === 'application/zip' || 
+        file.mimetype === 'application/x-zip-compressed' ||
+        file.originalname.endsWith('.zip')) {
       cb(null, true);
     } else {
       cb(new Error('Only ZIP files are allowed'), false);
@@ -42,7 +49,7 @@ router.post('/', authenticateToken, upload.single('zipFile'), async (req, res) =
     }
 
     const { projectName, description } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const zipPath = req.file.path;
     const extractPath = path.join(__dirname, '..', '..', 'extracted', uuidv4());
 
@@ -180,65 +187,43 @@ router.post('/', authenticateToken, upload.single('zipFile'), async (req, res) =
     }
 
     // Save project to database
-    const db = getDatabase();
+    const database = getDb();
+    const db = promisifyDb(database);
     
-    db.run('INSERT INTO projects (user_id, name, description, folder_path) VALUES (?, ?, ?, ?)',
-      [userId, projectName || 'Untitled Project', description || '', extractPath],
-      function(err) {
-        if (err) {
-          console.error('Database error:', err);
-          return res.status(500).json({ error: 'Failed to save project' });
-        }
+    try {
+      const result = await db.run('INSERT INTO projects (user_id, name, description, folder_path) VALUES (?, ?, ?, ?)',
+        [userId, projectName || 'Untitled Project', description || '', extractPath]);
+      
+      const projectId = result.lastID;
+      console.log('Project saved with ID:', projectId);
 
-        const projectId = this.lastID;
-        console.log('Project saved with ID:', projectId);
-
-        // Save layers and assets
-        let completedLayers = 0;
-        layers.forEach((layer, layerIndex) => {
-          db.run('INSERT INTO layers (project_id, name, z_index, rarity_percentage) VALUES (?, ?, ?, ?)',
-            [projectId, layer.name, layerIndex, 100.0],
-            function(err) {
-              if (err) {
-                console.error('Layer save error:', err);
-                return;
-              }
-              
-              const layerId = this.lastID;
-              let completedAssets = 0;
-              
-              layer.assets.forEach(asset => {
-                db.run(`INSERT INTO assets (layer_id, filename, file_path, rarity_weight) 
+      // Save layers and assets
+      for (const [layerIndex, layer] of layers.entries()) {
+        const layerResult = await db.run('INSERT INTO layers (project_id, name, z_index, rarity_percentage) VALUES (?, ?, ?, ?)',
+          [projectId, layer.name, layerIndex, 100.0]);
+        
+        const layerId = layerResult.lastID;
+        
+        for (const asset of layer.assets) {
+          await db.run(`INSERT INTO assets (layer_id, filename, file_path, rarity_weight) 
                        VALUES (?, ?, ?, ?)`,
-                  [layerId, asset.filename, asset.relativePath, 1.0],
-                  function(err) {
-                    if (err) {
-                      console.error('Asset save error:', err);
-                    }
-                    
-                    completedAssets++;
-                    if (completedAssets === layer.assets.length) {
-                      completedLayers++;
-                      if (completedLayers === layers.length) {
-                        // All layers and assets saved
-                        res.json({
-                          message: 'Project uploaded successfully',
-                          projectId,
-                          layers: layers.map(l => ({
-                            name: l.name,
-                            assetCount: l.assets.length
-                          }))
-                        });
-                      }
-                    }
-                  }
-                );
-              });
-            }
-          );
-        });
+            [layerId, asset.filename, asset.relativePath, 1.0]);
+        }
       }
-    );
+
+      // All layers and assets saved
+      res.json({
+        message: 'Project uploaded successfully',
+        projectId,
+        layers: layers.map(l => ({
+          name: l.name,
+          assetCount: l.assets.length
+        }))
+      });
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      res.status(500).json({ error: 'Failed to save project' });
+    }
 
     // Clean up uploaded zip file
     await fs.remove(zipPath);
@@ -250,59 +235,54 @@ router.post('/', authenticateToken, upload.single('zipFile'), async (req, res) =
 });
 
 // Get user's projects
-router.get('/projects', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const db = getDatabase();
+router.get('/projects', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const database = getDb();
+  const db = promisifyDb(database);
   
-  db.all(`SELECT p.*, 
-          (SELECT COUNT(*) FROM layers WHERE project_id = p.id) as layer_count,
-          (SELECT COUNT(*) FROM assets a 
-           JOIN layers l ON a.layer_id = l.id 
-           WHERE l.project_id = p.id) as asset_count
-          FROM projects p 
-          WHERE p.user_id = ? 
-          ORDER BY p.created_at DESC`, [userId], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
+  try {
+    const projects = await db.all(`SELECT p.*, 
+            (SELECT COUNT(*) FROM layers WHERE project_id = p.id) as layer_count,
+            (SELECT COUNT(*) FROM assets a 
+             JOIN layers l ON a.layer_id = l.id 
+             WHERE l.project_id = p.id) as asset_count
+            FROM projects p 
+            WHERE p.user_id = ? 
+            ORDER BY p.created_at DESC`, [userId]);
     
-    res.json({ projects: rows });
-  });
+    res.json({ projects });
+  } catch (error) {
+    console.error('Database error:', error);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Delete project
 router.delete('/projects/:projectId', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
-  const userId = req.user.userId;
-  const db = getDatabase();
+  const userId = req.user.id;
+  const database = getDb();
+  const db = promisifyDb(database);
   
   try {
     // Verify user owns this project
-    db.get('SELECT folder_path FROM projects WHERE id = ? AND user_id = ?', [projectId, userId], async (err, project) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      
-      if (!project) {
-        return res.status(404).json({ error: 'Project not found' });
-      }
-      
-      // Delete from database (cascade will handle related records)
-      db.run('DELETE FROM projects WHERE id = ?', [projectId], async function(err) {
-        if (err) {
-          return res.status(500).json({ error: 'Failed to delete project' });
-        }
-        
-        // Clean up extracted files
-        try {
-          await fs.remove(project.folder_path);
-        } catch (cleanupError) {
-          console.error('Failed to cleanup project files:', cleanupError);
-        }
-        
-        res.json({ message: 'Project deleted successfully' });
-      });
-    });
+    const project = await db.get('SELECT folder_path FROM projects WHERE id = ? AND user_id = ?', [projectId, userId]);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Delete from database (cascade will handle related records)
+    await db.run('DELETE FROM projects WHERE id = ?', [projectId]);
+    
+    // Clean up extracted files
+    try {
+      await fs.remove(project.folder_path);
+    } catch (cleanupError) {
+      console.error('Failed to cleanup project files:', cleanupError);
+    }
+    
+    res.json({ message: 'Project deleted successfully' });
   } catch (error) {
     console.error('Delete project error:', error);
     res.status(500).json({ error: 'Failed to delete project' });

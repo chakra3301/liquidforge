@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { getDb } = require('../database/database');
+const { getDb, promisifyDb } = require('../database/database');
 
 const router = express.Router();
 
@@ -12,7 +12,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 router.post('/register', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const db = getDb();
+    const database = getDb();
+    const db = promisifyDb(database);
 
     // Check if user already exists
     const existingUser = await db.get('SELECT * FROM users WHERE email = ?', [email]);
@@ -51,7 +52,8 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const db = getDb();
+    const database = getDb();
+    const db = promisifyDb(database);
 
     // Find user
     const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
@@ -93,7 +95,8 @@ router.get('/verify', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const db = getDb();
+    const database = getDb();
+    const db = promisifyDb(database);
     
     const user = await db.get('SELECT id, email FROM users WHERE id = ?', [decoded.userId]);
     

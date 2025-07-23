@@ -3,22 +3,27 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
-const { getDatabase } = require('../database/database');
+const { getDb } = require('../database/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Helper for safer error logging
+function logError(label, error) {
+  console.error(label, error && (error.stack || JSON.stringify(error, null, 2) || error));
+}
+
 // Generate NFTs
 router.post('/:projectId', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
-  const { count, collectionName, description, baseUrl } = req.body;
+  const { count, collectionName, description, baseUrl, overwrite } = req.body;
   const userId = req.user.userId;
-  const db = getDatabase();
-  
+  const db = await getDb();
+
   if (!count || count < 1 || count > 10000) {
     return res.status(400).json({ error: 'Count must be between 1 and 10,000' });
   }
-  
+
   try {
     // Verify user owns this project
     const project = await new Promise((resolve, reject) => {
@@ -27,11 +32,30 @@ router.post('/:projectId', authenticateToken, async (req, res) => {
         else resolve(row);
       });
     });
-    
+
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
-    
+
+    // Check for existing generated NFTs
+    const existingCount = await new Promise((resolve, reject) => {
+      db.get('SELECT COUNT(*) as count FROM generated_nfts WHERE project_id = ?', [projectId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row.count);
+      });
+    });
+    if (existingCount > 0 && !overwrite) {
+      return res.status(409).json({ error: 'NFTs already exist for this project. Please confirm overwrite.' });
+    }
+    if (existingCount > 0 && overwrite) {
+      await new Promise((resolve, reject) => {
+        db.run('DELETE FROM generated_nfts WHERE project_id = ?', [projectId], (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+
     // Get project settings
     const settings = await new Promise((resolve, reject) => {
       db.get('SELECT * FROM project_settings WHERE project_id = ?', [projectId], (err, row) => {
@@ -39,20 +63,22 @@ router.post('/:projectId', authenticateToken, async (req, res) => {
         else resolve(row || { canvas_width: 1000, canvas_height: 1000, background_color: '#ffffff' });
       });
     });
-    
+
     // Get all layers with assets
     const layers = await new Promise((resolve, reject) => {
-      db.all(`SELECT l.*, a.id as asset_id, a.filename, a.file_path, a.rarity_weight,
-              a.position_x, a.position_y, a.scale_x, a.scale_y, a.rotation
-              FROM layers l
-              LEFT JOIN assets a ON l.id = a.layer_id
-              WHERE l.project_id = ?
-              ORDER BY l.z_index, a.filename`, [projectId], (err, rows) => {
+      db.all(`
+        SELECT l.*, a.id as asset_id, a.filename, a.file_path, a.rarity_weight,
+               a.position_x, a.position_y, a.scale_x, a.scale_y, a.rotation
+        FROM layers l
+        LEFT JOIN assets a ON l.id = a.layer_id
+        WHERE l.project_id = ?
+        ORDER BY l.z_index, a.filename
+      `, [projectId], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
     });
-    
+
     // Group assets by layer
     const layerAssets = {};
     layers.forEach(row => {
@@ -64,7 +90,7 @@ router.post('/:projectId', authenticateToken, async (req, res) => {
           assets: []
         };
       }
-      
+
       if (row.asset_id) {
         layerAssets[row.id].assets.push({
           id: row.asset_id,
@@ -79,88 +105,165 @@ router.post('/:projectId', authenticateToken, async (req, res) => {
         });
       }
     });
-    
+
     const layerList = Object.values(layerAssets).sort((a, b) => a.z_index - b.z_index);
-    
+
     if (layerList.length === 0) {
       return res.status(400).json({ error: 'No layers found in project' });
     }
-    
+
     // Get asset compatibility rules
     const compatibilityRules = await new Promise((resolve, reject) => {
-      db.all(`SELECT asset_id, incompatible_asset_id 
-              FROM asset_compatibility 
-              WHERE project_id = ?`, [projectId], (err, rows) => {
+      db.all(`
+        SELECT asset1_id as asset_id, asset2_id as incompatible_asset_id 
+        FROM asset_compatibility 
+        WHERE project_id = ?
+      `, [projectId], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
     });
-    
+
     // Create generation directory
     const generationId = uuidv4();
     const generationDir = path.join(__dirname, '..', '..', 'generated', generationId);
     await fs.ensureDir(generationDir);
-    
+
     // Start generation process
     const generatedNFTs = [];
     const usedCombinations = new Set();
-    
+
     for (let i = 1; i <= count; i++) {
       let combination;
       let attempts = 0;
       const maxAttempts = 1000;
-      
+
       // Generate unique combination
       do {
         combination = generateCombination(layerList, compatibilityRules);
         attempts++;
-        
+
         if (attempts > maxAttempts) {
           return res.status(400).json({ 
             error: 'Unable to generate unique combinations. Try reducing the count or adding more assets.' 
           });
         }
       } while (usedCombinations.has(JSON.stringify(combination)));
-      
+
       usedCombinations.add(JSON.stringify(combination));
-      
+
       // Generate image
       const imagePath = path.join(generationDir, `${i.toString().padStart(4, '0')}.png`);
       await generateImage(combination, settings, project.folder_path, imagePath, layerList);
-      
+
       // Generate metadata
       const metadata = generateMetadata(i, combination, collectionName, description, baseUrl);
       const metadataPath = path.join(generationDir, `${i.toString().padStart(4, '0')}.json`);
       await fs.writeJson(metadataPath, metadata, { spaces: 2 });
-      
+
       // Save to database
       await new Promise((resolve, reject) => {
-        db.run('INSERT INTO generated_nfts (project_id, edition_number, image_path, metadata_path) VALUES (?, ?, ?, ?)',
-          [projectId, i, path.relative(path.join(__dirname, '..', '..'), imagePath), 
-           path.relative(path.join(__dirname, '..', '..'), metadataPath)], function(err) {
-          if (err) reject(err);
-          else resolve();
-        });
+        db.run(
+          'INSERT INTO generated_nfts (project_id, edition_number, image_path, metadata_path) VALUES (?, ?, ?, ?)',
+          [projectId, i, path.relative(path.join(__dirname, '..', '..'), imagePath), path.relative(path.join(__dirname, '..', '..'), metadataPath)],
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
       });
-      
+
       generatedNFTs.push({
         edition: i,
         image: `/generated/${generationId}/${i.toString().padStart(4, '0')}.png`,
-        metadata: metadata
+        metadata
       });
     }
-    
+
     res.json({
       message: `Successfully generated ${count} NFTs`,
       generationId,
       nfts: generatedNFTs
     });
-    
+
   } catch (error) {
-    console.error('Generation error:', error);
-    res.status(500).json({ error: 'Failed to generate NFTs' });
+    logError('Generation error:', error);
+    res.status(500).json({ error: 'Failed to generate NFTs', details: error.message });
   }
 });
+
+// Generate combination function remains exactly the same
+// Generate image function remains exactly the same, but improve its logging:
+
+async function generateImage(combination, settings, projectPath, outputPath, layerList) {
+  try {
+    const canvas = sharp({
+      create: {
+        width: settings.canvas_width,
+        height: settings.canvas_height,
+        channels: 4,
+        background: settings.background_color
+      }
+    });
+
+    const assets = layerList.map(layer => combination[layer.name]).filter(Boolean);
+
+    if (assets.length === 0) {
+      await canvas.png().toFile(outputPath);
+      return;
+    }
+
+    const compositeOperations = [];
+
+    for (const asset of assets) {
+      try {
+        const assetPath = path.join(projectPath, asset.file_path);
+        if (!await fs.pathExists(assetPath)) {
+          console.warn(`Asset not found: ${assetPath}`);
+          continue;
+        }
+
+        let img = sharp(assetPath);
+
+        const scaleX = asset.scale_x || 1;
+        const scaleY = asset.scale_y || 1;
+
+        const targetWidth = Math.max(1, Math.round(settings.canvas_width * scaleX));
+        const targetHeight = Math.max(1, Math.round(settings.canvas_height * scaleY));
+
+        img = img.resize(targetWidth, targetHeight);
+
+        if (asset.rotation) {
+          img = img.rotate(asset.rotation);
+        }
+
+        const imgBuffer = await img.png().toBuffer();
+
+        const top = Math.round((asset.position_y || 0) * settings.canvas_height);
+        const left = Math.round((asset.position_x || 0) * settings.canvas_width);
+
+        compositeOperations.push({
+          input: imgBuffer,
+          top,
+          left
+        });
+
+      } catch (error) {
+        logError(`Error processing asset ${asset.filename}:`, error);
+      }
+    }
+
+    if (compositeOperations.length > 0) {
+      await canvas.composite(compositeOperations).png().toFile(outputPath);
+    } else {
+      await canvas.png().toFile(outputPath);
+    }
+
+  } catch (error) {
+    logError('Error generating image:', error);
+    throw error;
+  }
+}
 
 // Generate a random combination based on rarity weights and compatibility rules
 function generateCombination(layers, compatibilityRules = []) {
@@ -243,77 +346,6 @@ function generateCombination(layers, compatibilityRules = []) {
   return combination;
 }
 
-// Generate composite image using Sharp
-async function generateImage(combination, settings, projectPath, outputPath, layerList) {
-  try {
-    const canvas = sharp({
-      create: {
-        width: settings.canvas_width,
-        height: settings.canvas_height,
-        channels: 4,
-        background: settings.background_color
-      }
-    });
-
-    const assets = layerList.map(layer => combination[layer.name]).filter(Boolean);
-
-    if (assets.length === 0) {
-      await canvas.png().toFile(outputPath);
-      return;
-    }
-
-    const compositeOperations = [];
-
-    for (const asset of assets) {
-      try {
-        const assetPath = path.join(projectPath, asset.file_path);
-        if (!await fs.pathExists(assetPath)) {
-          console.warn(`Asset not found: ${assetPath}`);
-          continue;
-        }
-
-        let img = sharp(assetPath);
-
-        const scaleX = asset.scale_x || 1;
-        const scaleY = asset.scale_y || 1;
-
-        const targetWidth = Math.round(settings.canvas_width * scaleX);
-        const targetHeight = Math.round(settings.canvas_height * scaleY);
-
-        img = img.resize(targetWidth, targetHeight);
-
-        if (asset.rotation) {
-          img = img.rotate(asset.rotation);
-        }
-
-        const imgBuffer = await img.png().toBuffer();
-
-        const top = Math.round((asset.position_y || 0) * settings.canvas_height);
-        const left = Math.round((asset.position_x || 0) * settings.canvas_width);
-
-        compositeOperations.push({
-          input: imgBuffer,
-          top,
-          left
-        });
-
-      } catch (error) {
-        console.error(`Error processing asset ${asset.filename}:`, error);
-      }
-    }
-
-    if (compositeOperations.length > 0) {
-      await canvas.composite(compositeOperations).png().toFile(outputPath);
-    } else {
-      await canvas.png().toFile(outputPath);
-    }
-
-  } catch (error) {
-    console.error('Error generating image:', error);
-    throw error;
-  }
-}
-
 // Generate metadata for NFT
 function generateMetadata(edition, combination, collectionName, description, baseUrl) {
   const attributes = Object.entries(combination).map(([layerName, asset]) => ({
@@ -324,7 +356,7 @@ function generateMetadata(edition, combination, collectionName, description, bas
   return {
     name: `${collectionName || 'NFT'} #${edition.toString().padStart(4, '0')}`,
     description: description || 'Generated NFT',
-    image: `${baseUrl || 'http://localhost:5000'}/generated/${edition.toString().padStart(4, '0')}.png`,
+    image: `${baseUrl || 'http://localhost:3000'}/generated/${edition.toString().padStart(4, '0')}.png`,
     attributes: attributes,
     edition: edition
   };
@@ -335,7 +367,7 @@ router.post('/:projectId/preview', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
   const { count = 5 } = req.body;
   const userId = req.user.userId;
-  const db = getDatabase();
+  const db = await getDb();
   
   if (!count || count < 1 || count > 20) {
     return res.status(400).json({ error: 'Preview count must be between 1 and 20' });
@@ -418,7 +450,7 @@ router.post('/:projectId/preview', authenticateToken, async (req, res) => {
       await generateImage(combination, settings, project.folder_path, imagePath, layerList);
       
       // Generate metadata
-      const metadata = generateMetadata(i, combination, 'Preview', 'Preview NFT', 'http://localhost:5001');
+      const metadata = generateMetadata(i, combination, 'Preview', 'Preview NFT', 'http://localhost:3000');
       
       previewNFTs.push({
         edition: i,
@@ -441,10 +473,10 @@ router.post('/:projectId/preview', authenticateToken, async (req, res) => {
 });
 
 // Get generation status
-router.get('/:projectId/status', authenticateToken, (req, res) => {
+router.get('/:projectId/status', authenticateToken, async (req, res) => {
   const { projectId } = req.params;
   const userId = req.user.userId;
-  const db = getDatabase();
+  const db = await getDb();
   
   // Verify user owns this project
   db.get('SELECT id FROM projects WHERE id = ? AND user_id = ?', [projectId, userId], (err, project) => {
@@ -475,4 +507,4 @@ router.get('/:projectId/status', authenticateToken, (req, res) => {
   });
 });
 
-module.exports = router; 
+module.exports = router;

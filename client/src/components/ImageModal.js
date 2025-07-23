@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Download, ZoomIn, ZoomOut } from 'lucide-react';
+import AssetImage from './AssetImage';
 
 const ImageModal = ({ image, onClose, onDownload }) => {
   const [scale, setScale] = React.useState(1);
@@ -78,8 +79,9 @@ const ImageModal = ({ image, onClose, onDownload }) => {
         {/* Image Container */}
         <div className="flex-1 overflow-auto p-4">
           <div className="flex items-center justify-center min-h-full">
-            <img
-              src={`/api/assets/${image.projectId || 'unknown'}/${image.file_path}`}
+            <AssetImage
+              projectId={image.projectId}
+              assetPath={image.file_path}
               alt={image.filename}
               className="max-w-full max-h-full object-contain"
               style={{ transform: `scale(${scale})` }}

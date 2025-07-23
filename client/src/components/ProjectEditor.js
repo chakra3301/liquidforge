@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { Layers, Download, Play, Eye, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LayerManager from './LayerManager';
@@ -18,13 +17,13 @@ const ProjectEditor = () => {
   const fetchProjectData = useCallback(async () => {
     try {
       const [projectRes, layersRes] = await Promise.all([
-        axios.get(`/api/upload/projects`),
-        axios.get(`/api/layers/${projectId}`)
+        window.electronAPI.apiProjects(),
+        window.electronAPI.apiLayers({ projectId })
       ]);
 
-      const projectData = projectRes.data.projects.find(p => p.id === parseInt(projectId));
+      const projectData = projectRes.projects.find(p => p.id === parseInt(projectId));
       setProject(projectData);
-      setLayers(layersRes.data.layers);
+      setLayers(layersRes.layers);
     } catch (error) {
       toast.error('Failed to load project data');
       console.error('Error fetching project data:', error);
@@ -71,7 +70,7 @@ const ProjectEditor = () => {
       case 'rarity':
         return <RarityManager projectId={projectId} layers={layers} />;
       case 'generate':
-        return <NFTGenerator projectId={projectId} project={project} />;
+        return <NFTGenerator key={`nft-generator-${projectId}`} projectId={projectId} project={project} />;
       case 'download':
         return <DownloadManager projectId={projectId} project={project} />;
       default:
@@ -122,8 +121,8 @@ const DownloadManager = ({ projectId, project }) => {
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/download/${projectId}/stats`);
-      setStats(response.data);
+      const response = await window.electronAPI.apiDownloadStats({ projectId });
+      setStats(response);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
@@ -136,18 +135,10 @@ const DownloadManager = ({ projectId, project }) => {
   const handleDownload = async (type) => {
     setLoading(true);
     try {
-      const response = await axios.get(`/api/download/${projectId}/${type}`, {
-        responseType: 'blob'
+      await window.electronAPI.apiDownload({
+        projectId,
+        type
       });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${project.name}-${type}.${type === 'csv' ? 'csv' : 'zip'}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
 
       toast.success(`${type.toUpperCase()} download started`);
     } catch (error) {

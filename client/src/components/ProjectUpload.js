@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import axios from 'axios';
 import { Upload, X, File, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -46,21 +45,28 @@ const ProjectUpload = ({ onUploaded, onCancel }) => {
     setUploading(true);
     
     try {
-      const formData = new FormData();
-      formData.append('zipFile', selectedFile);
-      formData.append('projectName', projectName);
-      formData.append('description', description);
-
-      await axios.post('/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      // Convert file to base64 for IPC
+      const fileData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsArrayBuffer(selectedFile);
       });
+
+      const formData = {
+        file: {
+          name: selectedFile.name,
+          data: Array.from(new Uint8Array(fileData))
+        },
+        projectName,
+        description
+      };
+
+      await window.electronAPI.apiUpload(formData);
 
       toast.success('Project uploaded successfully!');
       onUploaded();
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Upload failed';
+      const errorMessage = error.message || 'Upload failed';
       toast.error(errorMessage);
       console.error('Upload error:', error);
     } finally {

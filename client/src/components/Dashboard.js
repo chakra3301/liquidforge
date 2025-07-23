@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import { Plus, Folder, Image, Settings, Download, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProjectUpload from './ProjectUpload';
@@ -16,8 +15,8 @@ const Dashboard = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await axios.get('/api/upload/projects');
-      setProjects(response.data.projects);
+      const response = await window.electronAPI.apiProjects();
+      setProjects(response.projects);
     } catch (error) {
       toast.error('Failed to load projects');
       console.error('Error fetching projects:', error);
@@ -37,8 +36,7 @@ const Dashboard = () => {
     }
 
     try {
-      // Note: You'll need to implement the delete endpoint on the backend
-      await axios.delete(`/api/projects/${projectId}`);
+      await window.electronAPI.apiProjectsDelete({ projectId });
       toast.success('Project deleted successfully');
       fetchProjects();
     } catch (error) {
@@ -126,7 +124,7 @@ const Dashboard = () => {
 
               <div className="flex space-x-2">
                 <Link
-                  to={`/project/${project.id}`}
+                  to={`/editor/${project.id}`}
                   className="cyber-button flex-1 text-center px-3 py-2 rounded-lg"
                 >
                   <Settings size={16} className="mr-2" />

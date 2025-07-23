@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { Save, BarChart3, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const RarityManager = ({ projectId, layers }) => {
-  const [rarityData, setRarityData] = useState({});
+  const [rarityData, setRarityData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState(null);
@@ -12,12 +11,11 @@ const RarityManager = ({ projectId, layers }) => {
   const fetchRarityData = useCallback(async () => {
     try {
       const [rarityRes, statsRes] = await Promise.all([
-        axios.get(`/api/rarity/${projectId}`),
-        axios.get(`/api/rarity/${projectId}/stats`)
+        window.electronAPI.apiRarity({ projectId }),
+        window.electronAPI.apiRarityStats({ projectId })
       ]);
-      
-      setRarityData(rarityRes.data);
-      setStats(statsRes.data);
+      setRarityData(rarityRes.layers || []);
+      setStats(statsRes);
     } catch (error) {
       toast.error('Failed to load rarity data');
       console.error('Error fetching rarity data:', error);
@@ -31,9 +29,8 @@ const RarityManager = ({ projectId, layers }) => {
   }, [fetchRarityData]);
 
   const handleRarityChange = (layerId, assetId, value) => {
-    setRarityData(prev => ({
-      ...prev,
-      layers: prev.layers.map(layer => {
+    setRarityData(prev => (
+      prev.map(layer => {
         if (layer.id === layerId) {
           return {
             ...layer,
@@ -47,14 +44,14 @@ const RarityManager = ({ projectId, layers }) => {
         }
         return layer;
       })
-    }));
+    ));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const allAssets = [];
-      rarityData.layers.forEach(layer => {
+      rarityData.forEach(layer => {
         layer.assets.forEach(asset => {
           allAssets.push({
             id: asset.id,
@@ -63,8 +60,9 @@ const RarityManager = ({ projectId, layers }) => {
         });
       });
 
-      await axios.put(`/api/rarity/${projectId}`, {
-        assets: allAssets
+      await window.electronAPI.apiRarityUpdate({
+        projectId,
+        rarity: { assets: allAssets }
       });
 
       toast.success('Rarity weights saved successfully');
@@ -121,7 +119,7 @@ const RarityManager = ({ projectId, layers }) => {
           </div>
         </div>
 
-        {rarityData.layers?.map((layer) => {
+        {rarityData?.map((layer) => {
           const totalWeight = calculateTotalWeight(layer.assets);
           
           return (

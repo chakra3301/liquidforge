@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import axios from 'axios';
 import { GripVertical, Eye, Settings, ChevronUp, ChevronDown, Percent, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AssetImage from './AssetImage';
 
 const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
   const [layerAssets, setLayerAssets] = useState({});
@@ -11,14 +11,14 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
   const fetchLayerAssets = useCallback(async () => {
     try {
       const assetPromises = layers.map(layer =>
-        axios.get(`/api/layers/${projectId}/${layer.id}/assets`)
+        window.electronAPI.apiLayersAssets({ projectId, layerId: layer.id })
       );
       
       const responses = await Promise.all(assetPromises);
       const assetsMap = {};
       
       responses.forEach((response, index) => {
-        assetsMap[layers[index].id] = response.data.assets;
+        assetsMap[layers[index].id] = response.assets;
       });
       
       setLayerAssets(assetsMap);
@@ -49,7 +49,8 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
 
     try {
       console.log('Updating layer order:', updatedLayers);
-      await axios.put(`/api/layers/${projectId}/order`, {
+      await window.electronAPI.apiLayersOrder({
+        projectId,
         layers: updatedLayers
       });
       
@@ -79,7 +80,8 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
     }));
 
     try {
-      await axios.put(`/api/layers/${projectId}/order`, {
+      await window.electronAPI.apiLayersOrder({
+        projectId,
         layers: updatedLayers
       });
       
@@ -93,8 +95,10 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
 
   const updateLayerRarity = async (layerId, rarityPercentage) => {
     try {
-      await axios.put(`/api/layers/${projectId}/layers/${layerId}/rarity`, {
-        rarity_percentage: rarityPercentage
+      await window.electronAPI.apiLayersRarity({
+        projectId,
+        layerId,
+        rarityPercentage
       });
       
       onLayersUpdate();
@@ -111,7 +115,10 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
     }
 
     try {
-      await axios.delete(`/api/layers/${projectId}/layers/${layerId}`);
+      await window.electronAPI.apiLayersDelete({
+        projectId,
+        layerId
+      });
       
       onLayersUpdate();
       toast.success(`Layer "${layerName}" deleted successfully`);
@@ -258,20 +265,12 @@ const LayerManager = ({ projectId, layers, onLayersUpdate }) => {
                                   className="flex-shrink-0 w-16 h-16 bg-cyber-gray border border-cyber-cyan rounded overflow-hidden cyber-glow"
                                   title={asset.filename}
                                 >
-                                  <img
-                                    src={`/api/assets/${projectId}/${asset.file_path}`}
+                                  <AssetImage
+                                    projectId={projectId}
+                                    assetPath={asset.file_path}
                                     alt={asset.filename}
                                     className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      e.target.nextSibling.style.display = 'flex';
-                                    }}
                                   />
-                                  <div className="w-full h-full flex items-center justify-center bg-cyber-gray" style={{display: 'none'}}>
-                                    <span className="text-xs text-cyber-cyan-light text-center px-1">
-                                      {asset.filename.split('.')[0]}
-                                    </span>
-                                  </div>
                                 </div>
                               ))}
                               {layerAssets[layer.id].length > 8 && (

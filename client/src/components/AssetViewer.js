@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { Search, Grid, List, Download, X, Plus, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AssetImage from './AssetImage';
 import ImageModal from './ImageModal';
 
 const AssetViewer = ({ projectId, layers }) => {
@@ -19,14 +19,14 @@ const AssetViewer = ({ projectId, layers }) => {
   const fetchLayerAssets = useCallback(async () => {
     try {
       const assetPromises = layers.map(layer =>
-        axios.get(`/api/layers/${projectId}/${layer.id}/assets`)
+        window.electronAPI.apiLayersAssets({ projectId, layerId: layer.id })
       );
       
       const responses = await Promise.all(assetPromises);
       const assetsMap = {};
       
       responses.forEach((response, index) => {
-        assetsMap[layers[index].id] = response.data.assets;
+        assetsMap[layers[index].id] = response.assets;
       });
       
       setLayerAssets(assetsMap);
@@ -93,8 +93,8 @@ const AssetViewer = ({ projectId, layers }) => {
 
   const fetchCompatibilityRules = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/layers/${projectId}/compatibility`);
-      setCompatibilityRules(response.data.compatibility_rules);
+      const response = await window.electronAPI.apiLayersCompatibility({ projectId });
+      setCompatibilityRules(response.compatibility || []);
     } catch (error) {
       toast.error('Failed to load compatibility rules');
       console.error('Error fetching compatibility rules:', error);
@@ -113,9 +113,12 @@ const AssetViewer = ({ projectId, layers }) => {
     }
 
     try {
-      await axios.post(`/api/layers/${projectId}/compatibility`, {
-        asset_id: selectedAsset1.id,
-        incompatible_asset_id: selectedAsset2.id
+      await window.electronAPI.apiLayersCompatibilityAdd({
+        projectId,
+        rule: {
+          asset_id: selectedAsset1.id,
+          incompatible_asset_id: selectedAsset2.id
+        }
       });
       
       toast.success('Compatibility rule added');
@@ -130,7 +133,10 @@ const AssetViewer = ({ projectId, layers }) => {
 
   const deleteCompatibilityRule = async (ruleId) => {
     try {
-      await axios.delete(`/api/layers/${projectId}/compatibility/${ruleId}`);
+      await window.electronAPI.apiLayersCompatibilityDelete({
+        projectId,
+        ruleId
+      });
       toast.success('Compatibility rule deleted');
       fetchCompatibilityRules();
     } catch (error) {
@@ -262,20 +268,12 @@ const AssetViewer = ({ projectId, layers }) => {
                 {viewMode === 'grid' ? (
                   <>
                     <div className="aspect-square bg-cyber-gray relative group cursor-pointer" onClick={() => handleImageClick(asset)}>
-                      <img
-                        src={`/api/assets/${projectId}/${asset.file_path}`}
+                      <AssetImage
+                        projectId={projectId}
+                        assetPath={asset.file_path}
                         alt={asset.filename}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
                       />
-                      <div className="absolute inset-0 bg-cyber-gray flex items-center justify-center" style={{display: 'none'}}>
-                        <span className="text-xs text-cyber-cyan-light text-center px-2">
-                          {asset.filename.split('.')[0]}
-                        </span>
-                      </div>
                       
                       <div className="absolute inset-0 bg-cyber-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
                         <button

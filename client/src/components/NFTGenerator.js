@@ -1,14 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { Play, Download, BarChart3, AlertCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
+import GeneratedNFTImage from './GeneratedNFTImage';
 
-const NFTGenerator = ({ projectId, project }) => {
+const NFTGenerator = React.memo(({ projectId: propProjectId, project: propProject }) => {
+  const params = useParams();
+  const routeProjectId = params.projectId;
+  
+  // Use props if provided, otherwise use route params
+  const projectId = propProjectId || routeProjectId;
+  const [project, setProject] = useState(propProject);
+  
   const [generationConfig, setGenerationConfig] = useState({
     count: 100,
     collectionName: project?.name || 'My NFT Collection',
     description: 'Generated NFT collection',
-    baseUrl: 'http://localhost:5001'
+    baseUrl: window.location.origin
   });
   const [generating, setGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState(null);
@@ -17,47 +25,117 @@ const NFTGenerator = ({ projectId, project }) => {
   const [generatingPreview, setGeneratingPreview] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Refs to prevent multiple simultaneous operations
+  const generatingRef = useRef(false);
+  const generatingPreviewRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Fetch project data if not provided as prop
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!propProject && projectId) {
+        try {
+          console.log('Fetching project data for ID:', projectId);
+          const response = await window.electronAPI.apiProjects();
+          const foundProject = response.projects.find(p => p.id.toString() === projectId.toString());
+          if (foundProject && mountedRef.current) {
+            setProject(foundProject);
+            setGenerationConfig(prev => ({
+              ...prev,
+              collectionName: foundProject.name || 'My NFT Collection'
+            }));
+            console.log('Project data loaded successfully');
+          }
+        } catch (error) {
+          console.error('Error fetching project:', error);
+          if (mountedRef.current) {
+            toast.error('Failed to load project');
+          }
+        }
+      }
+    };
+
+    fetchProject();
+  }, [propProject, projectId]);
+
   const fetchGenerationStatus = useCallback(async () => {
+    if (!projectId) return;
+    
     try {
-      const response = await axios.get(`/api/generate/${projectId}/status`);
-      setGenerationStatus(response.data);
+      console.log('Fetching generation status for project:', projectId);
+      const response = await window.electronAPI.apiGenerateStatus({ projectId });
+      if (mountedRef.current) {
+        setGenerationStatus(response);
+      }
     } catch (error) {
       console.error('Error fetching generation status:', error);
     }
   }, [projectId]);
 
   useEffect(() => {
-    fetchGenerationStatus();
-  }, [fetchGenerationStatus]);
+    if (projectId) {
+      fetchGenerationStatus();
+    }
+  }, [projectId, fetchGenerationStatus]);
 
-  const handleConfigChange = (field, value) => {
+  const handleConfigChange = useCallback((field, value) => {
     setGenerationConfig(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
-  const handleGeneratePreview = async () => {
+  const handleGeneratePreview = useCallback(async () => {
+    if (generatingPreviewRef.current) {
+      console.log('Preview generation already in progress, skipping');
+      return;
+    }
+
+    generatingPreviewRef.current = true;
     setGeneratingPreview(true);
     
     try {
-      const response = await axios.post(`/api/generate/${projectId}/preview`, {
+      console.log('Starting preview generation for project:', projectId);
+      const response = await window.electronAPI.apiGeneratePreview({
+        projectId,
         count: 5
       });
       
-      setPreviewNFTs(response.data.nfts || []);
-      setShowPreview(true);
-      toast.success('Preview generated successfully!');
+      if (mountedRef.current) {
+        setPreviewNFTs(response.nfts || []);
+        setShowPreview(true);
+        toast.success('Preview generated successfully!');
+        console.log('Preview generation completed successfully');
+      }
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Preview generation failed';
-      toast.error(errorMessage);
       console.error('Preview generation error:', error);
+      if (mountedRef.current) {
+        const errorMessage = error.message || 'Preview generation failed';
+        toast.error(errorMessage);
+      }
     } finally {
-      setGeneratingPreview(false);
+      if (mountedRef.current) {
+        setGeneratingPreview(false);
+      }
+      generatingPreviewRef.current = false;
     }
-  };
+  }, [projectId]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
+    if (generatingRef.current) {
+      console.log('Generation already in progress, skipping');
+      return;
+    }
+
+    console.log('Generate button clicked');
+    
     if (!generationConfig.count || generationConfig.count < 1 || generationConfig.count > 10000) {
       toast.error('Please enter a valid count between 1 and 10,000');
       return;
@@ -68,44 +146,102 @@ const NFTGenerator = ({ projectId, project }) => {
       return;
     }
 
+    generatingRef.current = true;
+    console.log('Starting generation with config:', generationConfig);
     setGenerating(true);
     
     try {
-      const response = await axios.post(`/api/generate/${projectId}`, generationConfig);
-      
-      toast.success(`Successfully generated ${generationConfig.count} NFTs!`);
-      setGeneratedNFTs(response.data.nfts || []);
-      fetchGenerationStatus();
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Generation failed';
-      toast.error(errorMessage);
-      console.error('Generation error:', error);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handleDownload = async (type) => {
-    try {
-      const response = await axios.get(`/api/download/${projectId}/${type}`, {
-        responseType: 'blob'
+      console.log('Calling apiGenerate...');
+      const response = await window.electronAPI.apiGenerate({
+        projectId,
+        config: generationConfig
       });
+      
+      console.log('Generation response:', response);
+      
+      if (mountedRef.current) {
+        toast.success(`Successfully generated ${generationConfig.count} NFTs!`);
+        
+        // Update state in a single batch to prevent multiple re-renders
+        setGeneratedNFTs(response.nfts || []);
+        setGenerationStatus(prev => ({
+          ...prev,
+          total_generated: response.nfts?.length || 0,
+          max_edition: response.nfts?.length || 0
+        }));
+        
+        console.log('Generation completed successfully');
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      
+      if (!mountedRef.current) return;
+      
+      // Check for overwrite error
+      if (error.message?.includes('NFTs already exist for this project')) {
+        if (window.confirm('NFTs already exist for this project. Overwrite?')) {
+          try {
+            console.log('Overwriting existing NFTs...');
+            const response = await window.electronAPI.apiGenerate({
+              projectId,
+              config: { ...generationConfig, overwrite: true }
+            });
+            
+            console.log('Overwrite generation response:', response);
+            
+            if (mountedRef.current) {
+              toast.success(`Successfully generated ${generationConfig.count} NFTs!`);
+              
+              // Update state in a single batch
+              setGeneratedNFTs(response.nfts || []);
+              setGenerationStatus(prev => ({
+                ...prev,
+                total_generated: response.nfts?.length || 0,
+                max_edition: response.nfts?.length || 0
+              }));
+              
+              console.log('Overwrite generation completed successfully');
+            }
+          } catch (err2) {
+            console.error('Overwrite generation error:', err2);
+            if (mountedRef.current) {
+              const errorMessage2 = err2.message || 'Generation failed';
+              toast.error(errorMessage2);
+            }
+          }
+        } else {
+          if (mountedRef.current) {
+            toast('Generation cancelled.');
+          }
+        }
+      } else {
+        if (mountedRef.current) {
+          const errorMessage = error.message || 'Generation failed';
+          toast.error(errorMessage);
+        }
+      }
+    } finally {
+      console.log('Setting generating to false');
+      if (mountedRef.current) {
+        setGenerating(false);
+      }
+      generatingRef.current = false;
+    }
+  }, [projectId, generationConfig]);
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${generationConfig.collectionName}-${type}.${type === 'csv' ? 'csv' : 'zip'}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+  const handleDownload = useCallback(async (type) => {
+    try {
+      await window.electronAPI.apiDownload({
+        projectId,
+        type
+      });
 
       toast.success(`${type.toUpperCase()} download started`);
     } catch (error) {
       toast.error('Download failed');
       console.error('Download error:', error);
     }
-  };
+  }, [projectId]);
 
   return (
     <div className="space-y-6">
@@ -194,19 +330,19 @@ const NFTGenerator = ({ projectId, project }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-cyber-gray border border-cyber-cyan rounded-lg cyber-glow">
                   <div className="text-2xl font-bold text-cyber-cyan cyber-text">
-                    {generationStatus.total_generated}
+                    {generationStatus.total_generated || generatedNFTs.length}
                   </div>
                   <div className="text-sm text-cyber-cyan-light">Total Generated</div>
                 </div>
                 <div className="text-center p-4 bg-cyber-gray border border-cyber-cyan rounded-lg cyber-glow">
                   <div className="text-2xl font-bold text-cyber-cyan cyber-text">
-                    {generationStatus.max_edition || 0}
+                    {generationStatus.max_edition || generatedNFTs.length || 0}
                   </div>
                   <div className="text-sm text-cyber-cyan-light">Latest Edition</div>
                 </div>
               </div>
 
-              {generationStatus.total_generated > 0 && (
+              {(generationStatus.total_generated > 0 || generatedNFTs.length > 0) && (
                 <div className="space-y-3">
                   <h4 className="font-medium text-cyber-cyan cyber-text">Download Options</h4>
                   
@@ -277,24 +413,18 @@ const NFTGenerator = ({ projectId, project }) => {
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {previewNFTs.map((nft) => (
-              <div key={nft.edition} className="text-center">
+              <div key={nft.id} className="text-center">
                 <div className="w-full aspect-square bg-cyber-gray border border-cyber-cyan rounded-lg overflow-hidden mb-2 cyber-glow">
-                  <img
-                    src={`http://localhost:5001${nft.image}`}
-                    alt={`Preview ${nft.edition}`}
+                  <GeneratedNFTImage
+                    projectId={projectId}
+                    imageFileName={nft.image}
+                    alt={`Preview ${nft.id}`}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
                   />
-                  <div className="w-full h-full flex items-center justify-center" style={{ display: 'none' }}>
-                    <span className="text-xs text-cyber-cyan-light">#{nft.edition}</span>
-                  </div>
                 </div>
-                <p className="text-xs text-cyber-cyan font-medium">#{nft.edition}</p>
+                <p className="text-xs text-cyber-cyan font-medium">#{nft.id}</p>
                 <div className="text-xs text-cyber-cyan-light mt-1">
-                  {Object.keys(nft.combination).length} layers
+                  {nft.attributes?.length || 0} layers
                 </div>
               </div>
             ))}
@@ -319,22 +449,16 @@ const NFTGenerator = ({ projectId, project }) => {
           
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {generatedNFTs.slice(0, 12).map((nft) => (
-              <div key={nft.edition} className="text-center">
+              <div key={nft.id} className="text-center">
                 <div className="w-full aspect-square bg-cyber-gray border border-cyber-cyan rounded-lg overflow-hidden mb-2 cyber-glow">
-                  <img
-                    src={`http://localhost:5001${nft.image}`}
-                    alt={`NFT ${nft.edition}`}
+                  <GeneratedNFTImage
+                    projectId={projectId}
+                    imageFileName={nft.image}
+                    alt={`NFT ${nft.id}`}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
                   />
-                  <div className="w-full h-full flex items-center justify-center" style={{ display: 'none' }}>
-                    <span className="text-xs text-cyber-cyan-light">#{nft.edition}</span>
-                  </div>
                 </div>
-                <p className="text-xs text-cyber-cyan">{nft.metadata.name}</p>
+                <p className="text-xs text-cyber-cyan">{nft.name}</p>
               </div>
             ))}
           </div>
@@ -348,6 +472,6 @@ const NFTGenerator = ({ projectId, project }) => {
       )}
     </div>
   );
-};
+});
 
 export default NFTGenerator; 

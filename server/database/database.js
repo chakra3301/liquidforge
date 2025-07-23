@@ -69,6 +69,7 @@ async function initDatabase() {
         user_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         description TEXT,
+        folder_path TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
@@ -80,7 +81,7 @@ async function initDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         project_id INTEGER NOT NULL,
         name TEXT NOT NULL,
-        order_index INTEGER NOT NULL,
+        z_index INTEGER NOT NULL,
         rarity_percentage REAL DEFAULT 100.0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
@@ -93,8 +94,13 @@ async function initDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         layer_id INTEGER NOT NULL,
         filename TEXT NOT NULL,
-        filepath TEXT NOT NULL,
-        rarity_percentage REAL DEFAULT 100.0,
+        file_path TEXT NOT NULL,
+        rarity_weight REAL DEFAULT 1.0,
+        position_x REAL DEFAULT 0.0,
+        position_y REAL DEFAULT 0.0,
+        scale_x REAL DEFAULT 1.0,
+        scale_y REAL DEFAULT 1.0,
+        rotation REAL DEFAULT 0.0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (layer_id) REFERENCES layers (id) ON DELETE CASCADE
       )
@@ -114,6 +120,43 @@ async function initDatabase() {
         UNIQUE(asset1_id, asset2_id)
       )
     `);
+
+    // Create project_settings table for canvas configuration
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS project_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        canvas_width INTEGER DEFAULT 1000,
+        canvas_height INTEGER DEFAULT 1000,
+        background_color TEXT DEFAULT '#ffffff',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+        UNIQUE(project_id)
+      )
+    `);
+
+    // Create generated_nfts table for storing generated NFT data
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS generated_nfts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        edition_number INTEGER NOT NULL,
+        image_path TEXT NOT NULL,
+        metadata_path TEXT NOT NULL,
+        generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+        UNIQUE(project_id, edition_number)
+      )
+    `);
+
+    // Create demo user if it doesn't exist
+    const existingUser = await db.get('SELECT * FROM users WHERE email = ?', ['demo@user.com']);
+    if (!existingUser) {
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('demo123', 10);
+      await db.run('INSERT INTO users (email, password) VALUES (?, ?)', ['demo@user.com', hashedPassword]);
+      console.log('Demo user created: demo@user.com / demo123');
+    }
 
     console.log('Database initialized successfully');
   } catch (error) {
