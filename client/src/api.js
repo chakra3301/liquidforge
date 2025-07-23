@@ -377,13 +377,13 @@ export async function getGeneratedImage(projectId, imageFileName) {
   console.log('getGeneratedImage - Original path:', imageFileName);
   console.log('getGeneratedImage - Path to use:', pathToUse);
   
-  const res = await fetch(`${API_BASE}/api/generated/${projectId}/${encodeURIComponent(pathToUse)}`, {
+  const res = await fetch(`${API_BASE}/api/assets/generated/${encodeURIComponent(pathToUse)}`, {
     headers: {
       'Authorization': `Bearer ${getToken()}`
     }
   });
   
-  console.log('getGeneratedImage - URL:', `${API_BASE}/api/generated/${projectId}/${encodeURIComponent(pathToUse)}`);
+  console.log('getGeneratedImage - URL:', `${API_BASE}/api/assets/generated/${encodeURIComponent(pathToUse)}`);
   console.log('getGeneratedImage - Response status:', res.status);
   
   if (!res.ok) {
