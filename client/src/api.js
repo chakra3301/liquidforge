@@ -1,7 +1,11 @@
 const API_BASE = process.env.REACT_APP_API_URL.replace(/\/$/, '');
 
 function getToken() {
-  return localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.warn('No authentication token found');
+  }
+  return token;
 }
 
 export async function login(email, password) {
@@ -280,13 +284,26 @@ export async function uploadProject({ file, projectName, description }) {
   formData.append('projectName', projectName);
   formData.append('description', description);
 
+  const token = getToken();
+  console.log('Upload request - Token:', token ? 'Present' : 'Missing');
+  console.log('Upload request - API URL:', `${API_BASE}/api/upload`);
+
   const res = await fetch(`${API_BASE}/api/upload`, {
     method: 'POST',
     body: formData,
     headers: {
-      'Authorization': `Bearer ${getToken()}`
+      'Authorization': `Bearer ${token}`
     }
   });
-  if (!res.ok) throw new Error('Upload failed');
+  
+  console.log('Upload response status:', res.status);
+  console.log('Upload response headers:', Object.fromEntries(res.headers.entries()));
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('Upload error response:', errorText);
+    throw new Error('Upload failed');
+  }
+  
   return res.json();
 } 
