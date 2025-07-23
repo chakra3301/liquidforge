@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Folder, Image, Settings, Download, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProjectUpload from './ProjectUpload';
+import { getProjects } from '../api';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState([]);
@@ -15,7 +16,7 @@ const Dashboard = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await window.electronAPI.apiProjects();
+      const response = await getProjects();
       setProjects(response.projects);
     } catch (error) {
       toast.error('Failed to load projects');

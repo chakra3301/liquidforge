@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, File, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadProject } from '../api';
 
 const ProjectUpload = ({ onUploaded, onCancel }) => {
   const [projectName, setProjectName] = useState('');
@@ -45,23 +46,7 @@ const ProjectUpload = ({ onUploaded, onCancel }) => {
     setUploading(true);
     
     try {
-      // Convert file to base64 for IPC
-      const fileData = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsArrayBuffer(selectedFile);
-      });
-
-      const formData = {
-        file: {
-          name: selectedFile.name,
-          data: Array.from(new Uint8Array(fileData))
-        },
-        projectName,
-        description
-      };
-
-      await window.electronAPI.apiUpload(formData);
+      await uploadProject({ file: selectedFile, projectName, description });
 
       toast.success('Project uploaded successfully!');
       onUploaded();
