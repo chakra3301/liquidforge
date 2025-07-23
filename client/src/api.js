@@ -14,12 +14,24 @@ function getToken() {
 }
 
 export async function login(email, password) {
+  console.log('Login attempt for email:', email);
+  console.log('Login API URL:', `${API_BASE}/api/auth/login`);
+  
   const res = await fetch(`${API_BASE}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
   });
-  if (!res.ok) throw new Error('Login failed');
+  
+  console.log('Login response status:', res.status);
+  console.log('Login response headers:', Object.fromEntries(res.headers.entries()));
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('Login error response:', errorText);
+    throw new Error('Login failed');
+  }
+  
   const data = await res.json();
   console.log('Login - Received token:', data.token ? 'Present' : 'Missing');
   if (data.token) {
@@ -93,6 +105,14 @@ export async function debugTestToken() {
   } catch (error) {
     console.error('Token test failed:', error);
   }
+}
+
+// Make debug functions available globally for console access
+if (typeof window !== 'undefined') {
+  window.debugClearToken = debugClearToken;
+  window.debugTokenInfo = debugTokenInfo;
+  window.debugTestToken = debugTestToken;
+  console.log('Debug functions available: debugClearToken(), debugTokenInfo(), debugTestToken()');
 }
 
 export async function getProjects() {
