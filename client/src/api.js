@@ -67,6 +67,34 @@ export function debugTokenInfo() {
   }
 }
 
+// Debug function to test token validity
+export async function debugTestToken() {
+  const token = getToken();
+  console.log('Testing token validity...');
+  console.log('Token:', token ? 'Present' : 'Missing');
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/verify`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    console.log('Token test response status:', res.status);
+    if (res.ok) {
+      const data = await res.json();
+      console.log('Token test response:', data);
+      console.log('Token is VALID');
+    } else {
+      const errorText = await res.text();
+      console.log('Token test error:', errorText);
+      console.log('Token is INVALID');
+    }
+  } catch (error) {
+    console.error('Token test failed:', error);
+  }
+}
+
 export async function getProjects() {
   const res = await fetch(`${API_BASE}/api/upload/projects`, {
     headers: {
@@ -356,7 +384,9 @@ export async function uploadProject({ file, projectName, description }) {
   console.log('Upload request - Token:', token ? 'Present' : 'Missing');
   console.log('Upload request - Token length:', token ? token.length : 0);
   console.log('Upload request - Token starts with:', token ? token.substring(0, 20) + '...' : 'Missing');
+  console.log('Upload request - Token ends with:', token ? '...' + token.substring(token.length - 20) : 'Missing');
   console.log('Upload request - API URL:', `${API_BASE}/api/upload`);
+  console.log('Upload request - Authorization header:', `Bearer ${token}`);
 
   const res = await fetch(`${API_BASE}/api/upload`, {
     method: 'POST',
@@ -372,6 +402,7 @@ export async function uploadProject({ file, projectName, description }) {
   if (!res.ok) {
     const errorText = await res.text();
     console.error('Upload error response:', errorText);
+    console.error('Upload error response length:', errorText.length);
     throw new Error('Upload failed');
   }
   
