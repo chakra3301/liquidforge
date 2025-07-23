@@ -69,6 +69,8 @@ router.post('/login', async (req, res) => {
 
     // Create JWT token
     console.log('Login - JWT_SECRET:', JWT_SECRET ? 'Present' : 'Missing');
+    console.log('Login - JWT_SECRET length:', JWT_SECRET ? JWT_SECRET.length : 0);
+    console.log('Login - JWT_SECRET starts with:', JWT_SECRET ? JWT_SECRET.substring(0, 10) + '...' : 'Missing');
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       JWT_SECRET,

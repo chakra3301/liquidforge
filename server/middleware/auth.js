@@ -16,6 +16,10 @@ const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ error: 'Access token required' });
     }
     
+    console.log('Auth middleware - JWT_SECRET:', JWT_SECRET ? 'Present' : 'Missing');
+    console.log('Auth middleware - JWT_SECRET length:', JWT_SECRET ? JWT_SECRET.length : 0);
+    console.log('Auth middleware - JWT_SECRET starts with:', JWT_SECRET ? JWT_SECRET.substring(0, 10) + '...' : 'Missing');
+    
     const decoded = jwt.verify(token, JWT_SECRET);
     console.log('Auth middleware - Token decoded:', { userId: decoded.userId });
     const database = getDb();
