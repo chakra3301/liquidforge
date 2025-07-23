@@ -350,12 +350,26 @@ export async function getAssetImage(projectId, assetPath) {
 }
 
 export async function getGeneratedImage(projectId, imageFileName) {
-  const res = await fetch(`${API_BASE}/api/generated/${projectId}/${encodeURIComponent(imageFileName)}`, {
+  // Extract just the filename from the full path
+  const filename = imageFileName.split('/').pop();
+  console.log('getGeneratedImage - Original path:', imageFileName);
+  console.log('getGeneratedImage - Extracted filename:', filename);
+  
+  const res = await fetch(`${API_BASE}/api/generated/${projectId}/${encodeURIComponent(filename)}`, {
     headers: {
       'Authorization': `Bearer ${getToken()}`
     }
   });
-  if (!res.ok) throw new Error('Failed to fetch generated image');
+  
+  console.log('getGeneratedImage - URL:', `${API_BASE}/api/generated/${projectId}/${encodeURIComponent(filename)}`);
+  console.log('getGeneratedImage - Response status:', res.status);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('getGeneratedImage - Error response:', errorText);
+    throw new Error('Failed to fetch generated image');
+  }
+  
   const blob = await res.blob();
   return { data: URL.createObjectURL(blob) };
 }
