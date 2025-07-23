@@ -43,6 +43,11 @@ export async function register(email, password) {
   return data;
 }
 
+export function logout() {
+  localStorage.removeItem('token');
+  console.log('Token cleared from localStorage');
+}
+
 export async function getProjects() {
   const res = await fetch(`${API_BASE}/api/upload/projects`, {
     headers: {
@@ -318,6 +323,8 @@ export async function uploadProject({ file, projectName, description }) {
 
   const token = getToken();
   console.log('Upload request - Token:', token ? 'Present' : 'Missing');
+  console.log('Upload request - Token length:', token ? token.length : 0);
+  console.log('Upload request - Token starts with:', token ? token.substring(0, 20) + '...' : 'Missing');
   console.log('Upload request - API URL:', `${API_BASE}/api/upload`);
 
   const res = await fetch(`${API_BASE}/api/upload`, {
