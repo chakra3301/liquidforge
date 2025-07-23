@@ -8,22 +8,30 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Check for token in localStorage
     const token = localStorage.getItem('token');
+    console.log('AuthContext - Initial token check:', token ? 'Present' : 'Missing');
     if (token) {
-      // Optionally, decode token for user info
+      // Set user with token
       setUser({ token });
+      console.log('AuthContext - User set from localStorage');
     } else {
       setUser(null);
+      console.log('AuthContext - No token found, user set to null');
     }
   }, []);
 
-  const login = (token) => {
+  const login = (token, userData = null) => {
+    console.log('AuthContext - Login called with token:', token ? 'Present' : 'Missing');
     localStorage.setItem('token', token);
-    setUser({ token });
+    const userInfo = userData ? { ...userData, token } : { token };
+    setUser(userInfo);
+    console.log('AuthContext - User state updated:', userInfo);
   };
 
   const logout = () => {
+    console.log('AuthContext - Logout called');
     localStorage.removeItem('token');
     setUser(null);
+    console.log('AuthContext - User state cleared');
   };
 
   return (

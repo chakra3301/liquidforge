@@ -17,7 +17,9 @@ export default function Register() {
     setError('');
     try {
       const data = await register(email, password);
-      authLogin(data.token);
+      console.log('Register - API response:', data);
+      authLogin(data.token, data.user);
+      console.log('Register - AuthContext updated, navigating to dashboard');
       navigate('/dashboard');
     } catch (err) {
       setError('Registration failed. Please try a different email.');

@@ -17,7 +17,9 @@ export default function Login() {
     setError('');
     try {
       const data = await login(email, password);
-      authLogin(data.token);
+      console.log('Login - API response:', data);
+      authLogin(data.token, data.user);
+      console.log('Login - AuthContext updated, navigating to dashboard');
       navigate('/dashboard');
     } catch (err) {
       setError('Login failed. Please check your credentials.');
