@@ -105,3 +105,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp 
+
+client/public/uploads/
+client/public/generated/
+client/public/extracted/ 
