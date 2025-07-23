@@ -6,6 +6,7 @@ import LayerManager from './LayerManager';
 import RarityManager from './RarityManager';
 import NFTGenerator from './NFTGenerator';
 import AssetViewer from './AssetViewer';
+import { getProjects, getLayers } from '../api';
 
 const ProjectEditor = () => {
   const { projectId } = useParams();
@@ -17,8 +18,8 @@ const ProjectEditor = () => {
   const fetchProjectData = useCallback(async () => {
     try {
       const [projectRes, layersRes] = await Promise.all([
-        window.electronAPI.apiProjects(),
-        window.electronAPI.apiLayers({ projectId })
+        getProjects(),
+        getLayers(projectId)
       ]);
 
       const projectData = projectRes.projects.find(p => p.id === parseInt(projectId));

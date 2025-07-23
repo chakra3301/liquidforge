@@ -38,6 +38,16 @@ export async function getProjects() {
   return res.json();
 }
 
+export async function getLayers(projectId) {
+  const res = await fetch(`${API_BASE}/api/layers/${projectId}`, {
+    headers: {
+      'Authorization': `Bearer ${getToken()}`
+    }
+  });
+  if (!res.ok) throw new Error('Failed to fetch layers');
+  return res.json();
+}
+
 export async function uploadProject({ file, projectName, description }) {
   const formData = new FormData();
   formData.append('zipFile', file);
