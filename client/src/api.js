@@ -1,7 +1,7 @@
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = process.env.REACT_APP_API_URL.replace(/\/$/, ''); // Remove trailing slash
 
 export async function getProjects() {
-  const res = await fetch(`${API_BASE}/api/projects`);
+  const res = await fetch(`${API_BASE}/api/upload/projects`);
   if (!res.ok) throw new Error('Failed to fetch projects');
   return res.json();
 }
