@@ -227,15 +227,27 @@ export async function generatePreview(projectId, count = 5) {
 }
 
 export async function generateNFTs(projectId, config) {
+  const token = getToken();
+  console.log('generateNFTs - Token:', token ? 'Present' : 'Missing');
+  console.log('generateNFTs - Project ID:', projectId);
+  console.log('generateNFTs - Config:', config);
+  console.log('generateNFTs - Request body:', config);
+  
   const res = await fetch(`${API_BASE}/api/generate/${projectId}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
+      'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ config })
+    body: JSON.stringify(config)
   });
-  if (!res.ok) throw new Error('Failed to generate NFTs');
+  
+  console.log('generateNFTs - Response status:', res.status);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('generateNFTs - Error response:', errorText);
+    throw new Error('Failed to generate NFTs');
+  }
   return res.json();
 }
 
