@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register } from '../../api';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -8,13 +9,15 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      await register(email, password);
+      const data = await register(email, password);
+      authLogin(data.token);
       navigate('/dashboard');
     } catch (err) {
       setError('Registration failed. Please try a different email.');
