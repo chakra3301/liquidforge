@@ -2,172 +2,338 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Cyberpunk color variables */
+/* Modern color variables */
 :root {
-  --cyber-black: #000000;
-  --cyber-dark: #0a0a0a;
-  --cyber-gray: #1a1a1a;
-  --cyber-light-gray: #2a2a2a;
-  --cyber-cyan: #00ffff;
-  --cyber-cyan-dark: #00cccc;
-  --cyber-cyan-light: #33ffff;
-  --cyber-glow: 0 0 10px rgba(0, 255, 255, 0.5);
-  --cyber-glow-strong: 0 0 20px rgba(0, 255, 255, 0.8);
+  --black: #000000;
+  --dark-grey: #0a0a0a;
+  --grey: #1a1a1a;
+  --light-grey: #2a2a2a;
+  --lighter-grey: #3a3a3a;
+  --white: #ffffff;
+  --off-white: #f5f5f5;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #808080;
+  --accent: #4a9eff;
+  --accent-hover: #3a8eef;
+  --border: #333333;
+  --border-light: #404040;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --shadow-light: rgba(0, 0, 0, 0.1);
 }
 
 body {
   margin: 0;
-  font-family: 'Orbitron', 'Courier New', monospace;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--cyber-black);
-  color: var(--cyber-cyan);
+  background: var(--black);
+  color: var(--text-primary);
   overflow-x: hidden;
-}
-
-/* Add cyberpunk background pattern */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: 
-    linear-gradient(90deg, transparent 98%, var(--cyber-cyan) 100%),
-    linear-gradient(0deg, transparent 98%, var(--cyber-cyan) 100%);
-  background-size: 50px 50px;
-  opacity: 0.1;
-  z-index: -1;
-  pointer-events: none;
+  line-height: 1.6;
 }
 
 code {
-  font-family: 'Courier New', monospace;
-  color: var(--cyber-cyan);
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  color: var(--text-secondary);
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--cyber-dark);
+  background: var(--dark-grey);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--cyber-cyan);
-  border-radius: 4px;
-  box-shadow: var(--cyber-glow);
+  background: var(--grey);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--cyber-cyan-light);
-  box-shadow: var(--cyber-glow-strong);
+  background: var(--light-grey);
 }
 
-/* Custom slider styles */
-.slider {
+/* Modern utility classes */
+.modern-card {
+  background: var(--grey);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.modern-card:hover {
+  border-color: var(--border-light);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.modern-button {
+  background: var(--grey);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modern-button:hover {
+  background: var(--light-grey);
+  border-color: var(--border-light);
+  transform: translateY(-1px);
+}
+
+.modern-button:active {
+  transform: translateY(0);
+}
+
+.modern-button-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+}
+
+.modern-button-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.modern-button-secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.modern-button-secondary:hover {
+  background: var(--grey);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.modern-input {
+  background: var(--grey);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.modern-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+.modern-input::placeholder {
+  color: var(--text-muted);
+}
+
+.modern-text {
+  color: var(--text-primary);
+}
+
+.modern-text-secondary {
+  color: var(--text-secondary);
+}
+
+.modern-text-muted {
+  color: var(--text-muted);
+}
+
+.modern-border {
+  border: 1px solid var(--border);
+}
+
+.modern-border-light {
+  border: 1px solid var(--border-light);
+}
+
+/* Modern form elements */
+.modern-select {
+  background: var(--grey);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.modern-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+.modern-textarea {
+  background: var(--grey);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.modern-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+/* Modern slider */
+.modern-slider {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
   cursor: pointer;
 }
 
-.slider::-webkit-slider-track {
-  background: var(--cyber-gray);
-  height: 6px;
-  border-radius: 3px;
-  border: 1px solid var(--cyber-cyan);
-  box-shadow: var(--cyber-glow);
+.modern-slider::-webkit-slider-track {
+  background: var(--grey);
+  height: 4px;
+  border-radius: 2px;
+  border: none;
 }
 
-.slider::-webkit-slider-thumb {
+.modern-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  background: var(--cyber-cyan);
+  background: var(--accent);
   cursor: pointer;
-  border: 2px solid var(--cyber-black);
-  box-shadow: var(--cyber-glow-strong);
+  border: 2px solid var(--grey);
+  transition: all 0.2s ease;
 }
 
-.slider::-moz-range-track {
-  background: var(--cyber-gray);
-  height: 6px;
-  border-radius: 3px;
-  border: 1px solid var(--cyber-cyan);
-  box-shadow: var(--cyber-glow);
+.modern-slider::-webkit-slider-thumb:hover {
+  background: var(--accent-hover);
+  transform: scale(1.1);
 }
 
-.slider::-moz-range-thumb {
-  height: 16px;
-  width: 16px;
+/* Modern loading spinner */
+.modern-spinner {
+  border: 2px solid var(--border);
+  border-top: 2px solid var(--accent);
   border-radius: 50%;
-  background: var(--cyber-cyan);
-  cursor: pointer;
-  border: 2px solid var(--cyber-black);
-  box-shadow: var(--cyber-glow-strong);
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
 }
 
-/* Cyberpunk utility classes */
-.cyber-card {
-  background: var(--cyber-dark);
-  border: 1px solid var(--cyber-cyan);
-  box-shadow: var(--cyber-glow);
-  backdrop-filter: blur(10px);
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.cyber-button {
-  background: var(--cyber-gray);
-  border: 1px solid var(--cyber-cyan);
-  color: var(--cyber-cyan);
-  transition: all 0.3s ease;
-  box-shadow: var(--cyber-glow);
+/* Modern grid layouts */
+.modern-grid {
+  display: grid;
+  gap: 16px;
 }
 
-.cyber-button:hover {
-  background: var(--cyber-cyan);
-  color: var(--cyber-black);
-  box-shadow: var(--cyber-glow-strong);
-  transform: translateY(-2px);
+.modern-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-.cyber-input {
-  background: var(--cyber-dark);
-  border: 1px solid var(--cyber-cyan);
-  color: var(--cyber-cyan);
-  box-shadow: var(--cyber-glow);
+.modern-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-.cyber-input:focus {
+.modern-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* Modern spacing utilities */
+.modern-space-y > * + * {
+  margin-top: 16px;
+}
+
+.modern-space-y-sm > * + * {
+  margin-top: 8px;
+}
+
+.modern-space-y-lg > * + * {
+  margin-top: 24px;
+}
+
+.modern-space-x > * + * {
+  margin-left: 16px;
+}
+
+.modern-space-x-sm > * + * {
+  margin-left: 8px;
+}
+
+.modern-space-x-lg > * + * {
+  margin-left: 24px;
+}
+
+/* Modern typography */
+.modern-heading {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+}
+
+.modern-heading-lg {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 24px 0;
+}
+
+.modern-heading-sm {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.modern-text-sm {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.modern-text-xs {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Modern focus states */
+.modern-focus:focus {
   outline: none;
-  border-color: var(--cyber-cyan-light);
-  box-shadow: var(--cyber-glow-strong);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
 }
 
-.cyber-text {
-  color: var(--cyber-cyan);
-  text-shadow: 0 0 5px var(--cyber-cyan);
+/* Modern transitions */
+.modern-transition {
+  transition: all 0.2s ease;
 }
 
-.cyber-glow {
-  box-shadow: var(--cyber-glow);
+.modern-transition-fast {
+  transition: all 0.1s ease;
 }
 
-.cyber-glow-strong {
-  box-shadow: var(--cyber-glow-strong);
-}
-
-/* Animated background elements */
-@keyframes cyber-glow {
-  0%, 100% { box-shadow: var(--cyber-glow); }
-  50% { box-shadow: var(--cyber-glow-strong); }
-}
-
-.cyber-animate-glow {
-  animation: cyber-glow 2s ease-in-out infinite;
+.modern-transition-slow {
+  transition: all 0.3s ease;
 } 
