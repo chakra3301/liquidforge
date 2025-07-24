@@ -6,23 +6,7 @@ const { initDatabase } = require('./database/database');
 
 const app = express();
 
-// CORS configuration - more permissive for debugging
-const corsOptions = {
-  origin: true, // Allow all origins for now
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
-  optionsSuccessStatus: 200,
-  preflightContinue: false
-};
-
-// Middleware
-app.use(cors(corsOptions));
-
-// Additional CORS headers for preflight requests
-app.options('*', cors(corsOptions));
-
-// Add manual CORS headers as backup
+// Simple CORS configuration
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -34,6 +18,14 @@ app.use((req, res, next) => {
     next();
   }
 });
+
+// Also use cors middleware as backup
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -57,6 +49,8 @@ const PORT = process.env.PORT || 5001;
 initDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`CORS is enabled for all origins`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }).catch((err) => {
   console.error('Failed to initialize database:', err);
