@@ -107,12 +107,47 @@ export async function debugTestToken() {
   }
 }
 
+// Debug function to get a fresh token
+export async function debugGetFreshToken() {
+  console.log('Getting fresh token...');
+  
+  // Clear current token
+  localStorage.removeItem('token');
+  console.log('Current token cleared');
+  
+  // Try to log in again (you'll need to provide credentials)
+  console.log('Please log in again to get a fresh token');
+  console.log('Or run: debugLogin("your-email", "your-password")');
+}
+
+// Debug function to login and get fresh token
+export async function debugLogin(email, password) {
+  console.log('Debug login with:', email);
+  
+  try {
+    const data = await login(email, password);
+    console.log('Debug login successful');
+    console.log('New token received:', data.token ? 'Yes' : 'No');
+    return data;
+  } catch (error) {
+    console.error('Debug login failed:', error);
+    throw error;
+  }
+}
+
 // Make debug functions available globally for console access
 if (typeof window !== 'undefined') {
   window.debugClearToken = debugClearToken;
   window.debugTokenInfo = debugTokenInfo;
   window.debugTestToken = debugTestToken;
-  console.log('Debug functions available: debugClearToken(), debugTokenInfo(), debugTestToken()');
+  window.debugGetFreshToken = debugGetFreshToken;
+  window.debugLogin = debugLogin;
+  console.log('Debug functions available:');
+  console.log('- debugClearToken() - Clear token and reload');
+  console.log('- debugTokenInfo() - Show current token info');
+  console.log('- debugTestToken() - Test if current token is valid');
+  console.log('- debugGetFreshToken() - Clear token and prompt for new login');
+  console.log('- debugLogin(email, password) - Login and get fresh token');
 }
 
 export async function getProjects() {
